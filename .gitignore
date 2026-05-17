@@ -2,6 +2,9 @@ data/raw/
 data/masks/
 data/processed/
 
+
+src/data/cache/
+
 __pycache__/
 *.py[cod]
 *$py.class
@@ -24,3 +27,4 @@ env/
 Thumbs.db
 
 .env
+
