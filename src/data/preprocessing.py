@@ -3,9 +3,14 @@
 import geopandas as gpd
 import rasterio
 from rasterio.features import rasterize
-from shapely.geometry import box
 import osmnx as ox
 import numpy as np
+import os
+
+# set a global cache storage location
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+ox.settings.cache_folder = os.path.join(PROJECT_ROOT, "cache")
+ox.settings.use_cache = True
 
 # define training mask function
 def generate_training_mask(tiff_path, output_mask_path, place_name=None):
@@ -19,7 +24,7 @@ def generate_training_mask(tiff_path, output_mask_path, place_name=None):
     with rasterio.open(tiff_path) as src:
         meta = src.meta.copy()
         bounds = src.bounds
-        raster_crs = src.crs.to_string()
+        raster_crs = src.crs
         transform = src.transform
         width = src.width
         height = src.height
@@ -28,18 +33,25 @@ def generate_training_mask(tiff_path, output_mask_path, place_name=None):
     custom_filter = '["highway"~"path|footway|track"]'
     edges = None
 
+    # define a local path to store paths
+    local_vector_backup = os.path.join(PROJECT_ROOT, "data/raw/mt_tamalpais_trails.geojson")
 
-    # TODO: WIP - not functioning properly need to fix somehow
-    #           - might be a cache issue? unsure
-    #           - maybe pivot to local data storage instead of re-querying 
-    # backup: if API bounding box fails, use the robust place name query
-    if place_name:
-        print(f"Attempting robust fetch via place name: {place_name}...")
+    if os.path.exists(local_vector_backup):
+        print(f"Using backup at {local_vector_backup}. Loading offline...")
+        edges = gpd.read_file(local_vector_backup)
+
+    elif place_name:
+        print(f"Local backup missing. Querying OSM via place name: {place_name}...")
+        path_filter = '["highway"~"path|footway|track"]'
         try:
-            graph = ox.graph_from_place(place_name, custom_filter=custom_filter)
+            graph = ox.graph_from_place(place_name, custom_filter=path_filter)
             _, edges = ox.graph_to_gdfs(graph)
+            
+            # save local copy
+            print(f"Saving vector backup to: {local_vector_backup}...")
+            edges.to_file(local_vector_backup, driver="GeoJSON")
         except Exception as e:
-            print(f"Place query failed: {e}. Falling back to bounding box...")
+            print(f"ERROR: Place query failed: {e}")
 
     if edges is None:
         # OSMnx expects (north, south, east, west)
@@ -55,18 +67,25 @@ def generate_training_mask(tiff_path, output_mask_path, place_name=None):
             _, edges = ox.graph_to_gdfs(graph)
         except Exception as e:
             print(f"ERROR: OSM Server rejected connection: {e}")
-            print("💡 Tip: The public Overpass API is overloaded. Try running again in a few minutes,")
-            print("or pass the explicit 'place_name' parameter to use a cached query.")
+            print("Try passing the explicit 'place_name' parameter to use a cached query.")
             return
-    
+        
+    # check if CRS is geographic
+    if raster_crs.is_geographic:
+        utm_crs = edges.estimate_utm_crs()
 
-    # perform projection of vector trails from degrees to distance meaursements
-    print(f"Projecting trails to match GeoTIFF CRS: {raster_crs}...")
-    edges_projected = edges.to_crs(raster_crs)
+        # convert to metric units
+        edges_metric = edges.to_crs(utm_crs)
 
-    # apply a spatial buffer to give the lines a realistic physical width
-    print("Buffering vector trails into 2D trail polygons...")
-    buffered_trails = edges_projected.geometry.buffer(2.0)
+        # apply a spatial buffer to give the lines a realistic physical width
+        buffered_metric = edges_metric.geometry.buffer(2.0)
+
+        # project back to match GeoTiff crs
+        buffered_trails = buffered_metric.to_crs(raster_crs)
+
+    else:
+        edges_projected = edges.to_crs(raster_crs)
+        buffered_trails = edges_projected.geometry.buffer(2.0)
 
     # save the polygons to a binary 2D numpy array matching the image dimensions
     print("Rasterizing: Saving trail geometries into pixel mask...")
@@ -83,6 +102,7 @@ def generate_training_mask(tiff_path, output_mask_path, place_name=None):
 
     # save mask as a single band GeoTiff
     meta.update(dtype=rasterio.uint8, count=1, nodata=None)
+    os.makedirs(os.path.dirname(output_mask_path), exist_ok=True)
 
     print(f"Saving final binary ground-truth mask to {output_mask_path}...")
     with rasterio.open(output_mask_path, 'w', **meta) as dst:

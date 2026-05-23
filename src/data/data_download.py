@@ -93,8 +93,6 @@ def download_naip_images_to_drive(bbox, folder_name='ECS111_Trail_Data'):
         print("Download and save to 'data/raw/' folder.")
     else:
         print(f"Error: export failed: {end.get('error_message')}")
-    print("Download complete")
-
 
 # collect usgs elevation data from earth engine
 def download_usgs_elevation(bbox, folder_name="ECS111_Trail_Data"):
@@ -105,7 +103,7 @@ def download_usgs_elevation(bbox, folder_name="ECS111_Trail_Data"):
             folder_name: output gdrive folder location
     """
 
-    print('Starting download of USGS data to gdrive...')
+    print(f'Starting download of USGS data to gdrive: {folder_name}...')
 
     # define region of interest
     roi = ee.Geometry.Rectangle(bbox)
@@ -113,7 +111,10 @@ def download_usgs_elevation(bbox, folder_name="ECS111_Trail_Data"):
     # pulls from the USGS 3DEP 1/3 arc-second dataset (~10m resolution) 
     # will resample to match our NAIP grid resolution
     elevation_collection = ee.ImageCollection('USGS/3DEP/10m_collection')
-    elevation_dataset = elevation_collection.filterBounds(roi).select(['elevation']).mosaic()
+    elevation_dataset = (elevation_collection.filterBounds(roi)
+                         .select(['elevation'])
+                         .mosaic()
+                         .resample('bicubic'))
 
     # fit the global elevation model to specific bounding box
     elevation_fit = elevation_dataset.clip(roi)
