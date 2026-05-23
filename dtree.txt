@@ -1,0 +1,28 @@
+.
+├── config
+│   └── config.yaml
+├── data
+│   ├── masks
+│   ├── processed
+│   └── raw
+│       └── mt_tamalpais_naip.tif
+├── dtree.txt
+├── notebooks
+├── requirements.txt
+└── src
+    ├── data
+    │   ├── cache
+    │   ├── data_download.py
+    │   └── preprocessing.py
+    ├── evaluate.py
+    ├── __init__.py
+    ├── models
+    │   ├── components.py
+    │   ├── fusion.py
+    │   └── unet.py
+    ├── train.py
+    └── utils
+        ├── metrics.py
+        └── plotting.py
+
+12 directories, 14 files
