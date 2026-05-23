@@ -25,7 +25,7 @@ os.makedirs(PRED_DIR, exist_ok=True)
 os.makedirs(VIS_DIR, exist_ok=True)
 
 # CHANGE THESE IMPORTS TO MATCH YOUR PROJECT
-from models.unet import TrailModel
+from src.models.trail_net import TrailModel
 from datasets.dataset import TrailDataset
 
 
