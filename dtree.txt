@@ -5,6 +5,7 @@
 │   ├── masks
 │   ├── processed
 │   └── raw
+│       ├── mt_tamalpais_elevation.tif
 │       └── mt_tamalpais_naip.tif
 ├── dtree.txt
 ├── notebooks
@@ -13,6 +14,7 @@
     ├── data
     │   ├── cache
     │   ├── data_download.py
+    │   ├── dataset.py
     │   └── preprocessing.py
     ├── evaluate.py
     ├── __init__.py
@@ -25,4 +27,4 @@
         ├── metrics.py
         └── plotting.py
 
-12 directories, 14 files
+12 directories, 16 files

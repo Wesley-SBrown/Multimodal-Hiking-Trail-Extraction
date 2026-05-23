@@ -34,7 +34,9 @@ def download_osm_trails(place_name: str):
         print(f"Error: Failed to download data: {e}")
 
         return None
-    
+
+# Google Earth Engine Section
+
 # Authenticate Earth Engine
 def auth():
     try:
@@ -49,6 +51,7 @@ def download_naip_images_to_drive(bbox, folder_name='ECS111_Trail_Data'):
     """
     Downloads NAIP satellite images from Google Earth Engine to gdrive
     params: bbox: bounding box with lat and lon min/max vals
+            folder_name: output gdrive folder location
     """
 
     print('Pulling NAIP data...')
@@ -64,7 +67,7 @@ def download_naip_images_to_drive(bbox, folder_name='ECS111_Trail_Data'):
     # use mosaic to combine the layers together into a seemless image
     image = data.mosaic().select(['R','G','B','N']).clip(roi)
 
-    # definite async export
+    # define async export
     task = ee.batch.Export.image.toDrive(
         image=image,
         description='mt_tamalpais_naip_highres',
@@ -93,8 +96,55 @@ def download_naip_images_to_drive(bbox, folder_name='ECS111_Trail_Data'):
     print("Download complete")
 
 
+# collect usgs elevation data from earth engine
+def download_usgs_elevation(bbox, folder_name="ECS111_Trail_Data"):
+    """
+    Saves USGS 3DEP Digital Elevation Model (DEM) data within the given bounding box
+    Then saves to specified google drive folder 
+    params: bbox: bounding box of selection area
+            folder_name: output gdrive folder location
+    """
+
+    print('Starting download of USGS data to gdrive...')
+
+    # define region of interest
+    roi = ee.Geometry.Rectangle(bbox)
+
+    # pulls from the USGS 3DEP 1/3 arc-second dataset (~10m resolution) 
+    # will resample to match our NAIP grid resolution
+    elevation_collection = ee.ImageCollection('USGS/3DEP/10m_collection')
+    elevation_dataset = elevation_collection.filterBounds(roi).select(['elevation']).mosaic()
+
+    # fit the global elevation model to specific bounding box
+    elevation_fit = elevation_dataset.clip(roi)
+
+    # setup async export 
+    task = ee.batch.Export.image.toDrive(
+        image=elevation_fit,
+        description='mt_tamalpais_elevation',
+        folder=folder_name,
+        fileNamePrefix='mt_tamalpais_elevation',
+        scale=0.6, # forced rescaling to match NAIP
+        region=roi,
+        fileFormat='GeoTIFF'
+    )
+
+    # begin task
+    task.start()
+    print(f'Task started!\nExporting USGS Elevation data to gdrive folder: {folder_name}')
+    print('Status Check:')
+
+    while task.active():
+        print(f"Current Status: {task.status()['state']}...")
+        time.sleep(15)
+
+    final_status = task.status()
+    if final_status['state']=='COMPLETED':
+        print(f"Sucessfully completed task!\nData is stored in: {folder_name}")
+        print('Download and save to cwd to use!')
+
 if __name__=='__main__':
-    # OSM testing
+    # uncomment to pull path data from Open Street Map 
     # place = "Mount Tamalpais State Park, California, USA"
     # gdf = download_osm_trails(place)
 
@@ -109,4 +159,8 @@ if __name__=='__main__':
     # test bounding box from OSM matplot output
     mt_tam_bbox = [-122.625, 37.870, -122.580, 37.905]
     
-    download_naip_images_to_drive(mt_tam_bbox)
+    # uncomment to pull satellite data from NAIP
+    # download_naip_images_to_drive(mt_tam_bbox)
+
+    # uncomment to pull elevation data from USGS
+    download_usgs_elevation(mt_tam_bbox)
