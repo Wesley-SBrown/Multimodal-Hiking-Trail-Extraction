@@ -1,18 +1,36 @@
 # src/visualization/view_data.py
 
 import os
+import sys
+from pathlib import Path
+
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
+
+# Add project root to Python path so src imports work when running this file directly
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+sys.path.append(str(PROJECT_ROOT))
+
 from src.data.dataset import MultimodalTrailDataset
+from src.utils.config_loader import load_region_config
 
 def plot_multimodal_tile(idx=None):
     PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")) if "__file__" in locals() else os.getcwd()
     
-    # attempt to pull local data
-    naip_path = os.path.join(PROJECT_ROOT, "data/raw/mt_tamalpais_naip.tif")
-    elev_path = os.path.join(PROJECT_ROOT, "data/raw/mt_tamalpais_elevation.tif")
-    mask_path = os.path.join(PROJECT_ROOT, "data/masks/mt_tamalpais_mask.tif")
+    # attempt to pull local data from the active region listed in config/regions.yaml
+    region_config = load_region_config(PROJECT_ROOT)
+
+    naip_path = region_config["naip_path"]
+    elev_path = region_config["elev_path"]
+    mask_path = region_config["mask_path"]
+
+    tile_size = region_config["tile_size"]
+    stride = region_config["stride"]
+
+    print(f"Active region: {region_config['active_region']}")
+    print(f"Place name: {region_config['place_name']}")
+    print(f"Tile size: {tile_size}, Stride: {stride}")
 
     # check if mask is missing
     if not os.path.exists(mask_path):
@@ -20,7 +38,13 @@ def plot_multimodal_tile(idx=None):
         return
 
     # instantiate dataset locally
-    dataset = MultimodalTrailDataset(naip_path, elev_path, mask_path, tile_size=512, stride=256)
+    dataset = MultimodalTrailDataset(
+        naip_path,
+        elev_path,
+        mask_path,
+        tile_size=tile_size,
+        stride=stride
+    )
     
     # search for a tile that contains at least some trail pixels so the visualization isn't empty
     if idx is None:
@@ -90,11 +114,20 @@ def plot_multimodal_tile(idx=None):
     axes[1, 1].set_title("4. Ground Truth Mask (OSM Vector Overlay)", fontsize=11, fontweight="bold")
     axes[1, 1].axis("off")
 
-    plt.suptitle(f"Multimodal Data Alignment Grid | Tile ID: {idx}", fontsize=14, fontweight="bold", y=0.96)
+    plt.suptitle(
+        f"Multimodal Data Alignment Grid | Region: {region_config['active_region']} | Tile ID: {idx}",
+        fontsize=14,
+        fontweight="bold",
+        y=0.96
+    )
     plt.tight_layout()
     
     # save output pic locally in data folder
-    output_png = os.path.join(PROJECT_ROOT, "data", "sample_tile_visualization.png")
+    output_png = os.path.join(
+        PROJECT_ROOT,
+        "data",
+        f"{region_config['active_region']}_sample_tile_visualization.png"
+    )
     plt.savefig(output_png, dpi=150, bbox_inches="tight")
     print(f"Visualization plot successfully compiled and saved to:\n{output_png}")
     plt.show()

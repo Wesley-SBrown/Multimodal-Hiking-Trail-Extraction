@@ -5,6 +5,7 @@ import torch
 from torch.utils.data import DataLoader
 from src.data.preprocessing import generate_training_mask
 from src.data.dataset import MultimodalTrailDataset
+from src.utils.config_loader import load_region_config
 
 # create sanity check function to make sure current pipeline is functioning
 def run_sanity_check():
@@ -17,10 +18,20 @@ def run_sanity_check():
     os.makedirs(raw_dir, exist_ok=True)
     os.makedirs(mask_dir, exist_ok=True)
 
-    # pull hardcoded test paths
-    naip_path = os.path.join(raw_dir, "mt_tamalpais_naip.tif")
-    elev_path = os.path.join(raw_dir, "mt_tamalpais_elevation.tif")
-    mask_path = os.path.join(mask_dir, "mt_tamalpais_mask.tif")
+    # pull active region paths from config/regions.yaml
+    region_config = load_region_config(PROJECT_ROOT)
+
+    naip_path = region_config["naip_path"]
+    elev_path = region_config["elev_path"]
+    mask_path = region_config["mask_path"]
+
+    test_area = region_config["place_name"]
+    tile_size = region_config["tile_size"]
+    stride = region_config["stride"]
+
+    print(f"Active region: {region_config['active_region']}")
+    print(f"Place name: {test_area}")
+    print(f"Tile size: {tile_size}, Stride: {stride}")
 
     print("Checking data requirements ===")
 
@@ -28,15 +39,14 @@ def run_sanity_check():
     # required because earth engine data is saved to drive first
     if not os.path.exists(naip_path) or not os.path.exists(elev_path):
         print("ERROR: Missing source GeoTIFF files inside data/raw/!")
-        print("Please ensure you run data_download.py")
-        print(f"Place 'mt_tamalpais_naip.tif' and 'mt_tamalpais_elevation.tif' into:\n{raw_dir}")
+        print("Please ensure you run data_download.py or export the files from Google Earth Engine")
+        print(f"Expected NAIP file:\n{naip_path}")
+        print(f"Expected elevation file:\n{elev_path}")
         return
 
     print("Source images found! Preprocessing...")
 
     print("\nTesting label extraction & rasterization")
-
-    test_area = "Mount Tamalpais State Park, California, USA"
 
     try:
         generate_training_mask(naip_path, mask_path, place_name=test_area)
@@ -51,8 +61,8 @@ def run_sanity_check():
             naip_path=naip_path,
             elev_path=elev_path,
             mask_path=mask_path,
-            tile_size=512,
-            stride=256 # overlapping stride to verify window calculations
+            tile_size=tile_size,
+            stride=stride # overlapping stride to verify window calculations
         )
         print(f"Dataset built successfully! Total parsed tiles: {len(dataset)}")
     except Exception as e:
@@ -68,9 +78,9 @@ def run_sanity_check():
         visual_batch, elev_batch, target_batch = next(iter(dataloader))
         
         print("\nCOMPONENT CHECKS")
-        print(f"Visual Tensor (RGB+NIR+NDVI) Shape : {visual_batch.shape}  -> Expected: [B, 5, 512, 512]")
-        print(f"Elevation Tensor (DEM Data) Shape: {elev_batch.shape}  -> Expected: [B, 1, 512, 512]")
-        print(f"Target Mask (Ground Truth) Shape : {target_batch.shape}  -> Expected: [B, 512, 512]")
+        print(f"Visual Tensor (RGB+NIR+NDVI) Shape : {visual_batch.shape}  -> Expected: [B, 5, {tile_size}, {tile_size}]")
+        print(f"Elevation Tensor (DEM Data) Shape: {elev_batch.shape}  -> Expected: [B, 1, {tile_size}, {tile_size}]")
+        print(f"Target Mask (Ground Truth) Shape : {target_batch.shape}  -> Expected: [B, {tile_size}, {tile_size}]")
         
         print("\nValue Range & Sanity Check")
         print(f"Visual range   : Min={visual_batch.min().item():.4f}, Max={visual_batch.max().item():.4f} \

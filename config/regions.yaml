@@ -1,0 +1,22 @@
+# config/regions.yaml
+
+active_region: yosemite
+
+regions:
+  mt_tamalpais:
+    place_name: "Mount Tamalpais State Park, California, USA"
+    naip_file: "mt_tamalpais_naip.tif"
+    elevation_file: "mt_tamalpais_elevation.tif"
+    mask_file: "mt_tamalpais_mask.tif"
+    tile_size: 512
+    stride: 256
+
+  yosemite:
+    place_name: "Yosemite Valley, California, USA"
+    naip_file: "yosemite_naip.tif"
+    elevation_file: "yosemite_elevation.tif"
+    mask_file: "yosemite_mask.tif"
+    tile_size: 512
+    stride: 256
+
+ 
