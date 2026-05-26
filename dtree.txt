@@ -2,16 +2,21 @@
 ├── cache
 │   ├── ba2d2d47097c7497df8bfaae03ba0f2dd8e266d0.json
 │   └── dc0300040196170451fdfe30cf405a110708c1b2.json
+├── checkpoints
+│   └── best_trail_model.pth
 ├── config
 │   └── config.yaml
 ├── data
+│   ├── final_vector_overlay.png
 │   ├── masks
 │   │   └── mt_tamalpais_mask.tif
+│   ├── output_extracted_trails.geojson
 │   ├── processed
-│   └── raw
-│       ├── mt_tamalpais_elevation.tif
-│       ├── mt_tamalpais_naip.tif
-│       └── mt_tamalpais_trails.geojson
+│   ├── raw
+│   │   ├── mt_tamalpais_elevation.tif
+│   │   ├── mt_tamalpais_naip.tif
+│   │   └── mt_tamalpais_trails.geojson
+│   └── sample_tile_visualization.png
 ├── dtree.txt
 ├── notebooks
 ├── requirements.txt
@@ -23,19 +28,22 @@
 │   │   ├── preprocessing.py
 │   │   └── __pycache__
 │   ├── evaluate.py
+│   ├── inference
+│   │   ├── __pycache__
+│   │   └── reconstruct.py
 │   ├── __init__.py
 │   ├── models
-│   │   ├── components.py
-│   │   ├── fusion.py
-│   │   └── unet.py
+│   │   ├── __pycache__
+│   │   └── trail_net.py
 │   ├── __pycache__
 │   │   └── __init__.cpython-312.pyc
-│   ├── train.py
-│   ├── utils
-│   │   ├── metrics.py
-│   │   └── plotting.py
+│   ├── training
+│   │   ├── __pycache__
+│   │   └── train.py
 │   └── visualization
-│       └── view_data.py
+│       ├── __pycache__
+│       ├── view_data.py
+│       └── view_output.py
 └── test_pipeline.py
 
-16 directories, 23 files
+22 directories, 25 files
