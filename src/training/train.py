@@ -16,7 +16,9 @@ sys.path.append(str(PROJECT_ROOT))
 
 from src.data.dataset import MultimodalTrailDataset
 from src.models.trail_net import MultiModalNet
+from src.utils.config_loader import load_region_config
 
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 
 class DiceLoss(nn.Module):
     """
@@ -30,6 +32,9 @@ class DiceLoss(nn.Module):
     def forward(self, logits, targets):
         probs = torch.softmax(logits, dim=1)
         trail_probs = probs[:, 1, :, :]
+
+        # FIX: Ensure targets are float, on the right device, and match shape
+        targets = targets.float().to(device=logits.device)
 
         intersection = (trail_probs * targets).sum(dim=(1, 2))
         denominator = trail_probs.sum(dim=(1, 2)) + targets.sum(dim=(1, 2))
@@ -73,19 +78,21 @@ def run_smoke_test(model, train_loader, criterion_ce, criterion_dice, device):
     elev = elev.to(device)
     targets = targets.long().to(device)
 
-    # forward pass 
-    outputs = model(visual, elev)
-
     # print tensor shapes to verify the dataset and model match
     print("Visual shape:", visual.shape, "Expected: [B, 5, 512, 512]")
     print("Elevation shape:", elev.shape, "Expected: [B, 1, 512, 512]")
     print("Mask shape:", targets.shape, "Expected: [B, 512, 512]")
-    print("Output shape:", outputs.shape, "Expected: [B, 2, 512, 512]")
+    
 
-    # calculate the same losses used in training
-    loss_ce = criterion_ce(outputs, targets)
-    loss_dice = criterion_dice(outputs, targets)
-    loss = loss_ce + loss_dice
+    with autocast_mode.autocast("cuda"):
+        # forward pass 
+        outputs = model(visual, elev)
+        print("Output shape:", outputs.shape, "Expected: [B, 2, 512, 512]")
+
+        # calculate the same losses used in training
+        loss_ce = criterion_ce(outputs, targets)
+        loss_dice = criterion_dice(outputs, targets)
+        loss = loss_ce + loss_dice
 
     print("Smoke test CE loss:", loss_ce.item())
     print("Smoke test Dice loss:", loss_dice.item())
@@ -97,6 +104,8 @@ def run_smoke_test(model, train_loader, criterion_ce, criterion_dice, device):
     model.zero_grad()
     loss.backward()
     model.zero_grad()
+    del outputs, loss, loss_ce, loss_dice, visual, elev, targets
+    torch.cuda.empty_cache()
 
     print("Smoke test passed. Forward pass, loss, and backward pass all work.\n")
 
@@ -105,9 +114,8 @@ def train_model():
     # define paths
     PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 
-    naip_path = os.path.join(PROJECT_ROOT, "data/raw/mt_tamalpais_naip.tif")
-    elev_path = os.path.join(PROJECT_ROOT, "data/raw/mt_tamalpais_elevation.tif")
-    mask_path = os.path.join(PROJECT_ROOT, "data/masks/mt_tamalpais_mask.tif")
+    config = load_region_config(PROJECT_ROOT)
+
     checkpoint_dir = os.path.join(PROJECT_ROOT, "checkpoints")
     os.makedirs(checkpoint_dir, exist_ok=True)
 
@@ -119,13 +127,7 @@ def train_model():
     print(f'Starting training on: {device}')
 
     # pipeline acceleration
-    dataset = MultimodalTrailDataset(
-        naip_path=naip_path,
-        elev_path=elev_path,
-        mask_path=mask_path,
-        tile_size=512,
-        stride=256
-    )
+    dataset = MultimodalTrailDataset(config=config)
 
     # definte 80/20 split for train and validation
     train_size = int(0.8 * len(dataset))

@@ -1,6 +1,6 @@
 # config/regions.yaml
 
-active_region: yosemite
+active_region: mt_tamalpais
 
 regions:
   mt_tamalpais:
@@ -10,7 +10,7 @@ regions:
     mask_file: "mt_tamalpais_mask.tif"
     
   yosemite:
-    place_name: "Yosemite National Park, California, USA"
+    place_name: "Yosemite Valley, California, USA"
     naip_file: "yosemite_naip.tif"
     elev_file: "yosemite_elevation.tif"
     mask_file: "yosemite_mask.tif"

@@ -33,7 +33,7 @@ def run_sanity_check():
     print(f"Place name: {test_area}")
     print(f"Tile size: {tile_size}, Stride: {stride}")
 
-    print("Checking data requirements ===")
+    print("Checking data requirements")
 
     # check if local data exists already
     # required because earth engine data is saved to drive first

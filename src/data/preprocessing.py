@@ -31,7 +31,7 @@ def generate_training_mask(tiff_path, output_mask_path, place_name=None):
         height = src.height
 
     # pull from OSM using exact bounding box
-    custom_filter = '["highway"~"path|footway|track"]'
+    path_filter = '["highway"~"path|footway|track"]'
     edges = None
 
     # define a local path to store paths
@@ -45,17 +45,25 @@ def generate_training_mask(tiff_path, output_mask_path, place_name=None):
         edges = gpd.read_file(local_vector_backup)
 
     elif place_name:
+        # strat A: polygon graph by name
         print(f"Local backup missing. Querying OSM via place name: {place_name}...")
-        path_filter = '["highway"~"path|footway|track"]'
         try:
             graph = ox.graph_from_place(place_name, custom_filter=path_filter)
             _, edges = ox.graph_to_gdfs(graph)
             
-            # save local copy
-            print(f"Saving vector backup to: {local_vector_backup}...")
-            edges.to_file(local_vector_backup, driver="GeoJSON")
         except Exception as e:
-            print(f"ERROR: Place query failed: {e}")
+            # strat B: center point padding 
+            try:
+                lat, lon = ox.geocode(place_name)
+                padding = 0.05
+                graph = ox.graph_from_bbox(
+                    bbox=(lat + padding, lat - padding, lon + padding, lon - padding),
+                    custom_filter=path_filter
+                )
+                _, edges = ox.graph_to_gdfs(graph)
+            except Exception as e2:
+                print(f"ERROR: All OSM query attempts failed: {e2}")
+
 
     if edges is None:
         # OSMnx expects (north, south, east, west)
@@ -66,14 +74,23 @@ def generate_training_mask(tiff_path, output_mask_path, place_name=None):
         try:
             graph = ox.graph_from_bbox(
                 bbox=(north, south, east, west),
-                custom_filter=custom_filter
+                custom_filter=path_filter
             )
             _, edges = ox.graph_to_gdfs(graph)
         except Exception as e:
             print(f"ERROR: OSM Server rejected connection: {e}")
             print("Try passing the explicit 'place_name' parameter to use a cached query.")
-            return
+            raise RuntimeError("CRITICAL ERROR: Could not connect to OSM server and no offline backup exists. Mask pipeline aborted.")
         
+    # stop the pipeline if no trails were recovered
+    if edges is None or len(edges) == 0:
+        raise ValueError("CRITICAL ERROR: No trail vectors could be retrieved from OSM. Cannot generate mask.")
+
+    # save local vector backup
+    if not os.path.exists(local_vector_backup) and edges is not None:
+        print(f"Saving offline vector backup to: {local_vector_backup}...")
+        edges.to_file(local_vector_backup, driver="GeoJSON")
+
     # check if CRS is geographic
     if raster_crs.is_geographic:
         utm_crs = edges.estimate_utm_crs()

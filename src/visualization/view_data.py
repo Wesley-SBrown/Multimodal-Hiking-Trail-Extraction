@@ -38,13 +38,7 @@ def plot_multimodal_tile(idx=None):
         return
 
     # instantiate dataset locally
-    dataset = MultimodalTrailDataset(
-        naip_path,
-        elev_path,
-        mask_path,
-        tile_size=tile_size,
-        stride=stride
-    )
+    dataset = MultimodalTrailDataset(config=region_config)
     
     # search for a tile that contains at least some trail pixels so the visualization isn't empty
     if idx is None:

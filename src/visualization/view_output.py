@@ -8,13 +8,17 @@ import matplotlib.pyplot as plt
 
 # import dataset module
 from src.data.dataset import MultimodalTrailDataset
+from src.utils.config_loader import load_region_config
 
 def plot_vectorized_results():
     PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")) if "__file__" in locals() else os.getcwd()
+    TILE = 645
+    config = load_region_config(PROJECT_ROOT)
 
-    naip_path = os.path.join(PROJECT_ROOT, "data/raw/mt_tamalpais_naip.tif")
-    elev_path = os.path.join(PROJECT_ROOT, "data/raw/mt_tamalpais_elevation.tif")
-    mask_path = os.path.join(PROJECT_ROOT, "data/masks/mt_tamalpais_mask.tif")
+    naip_path = config["naip_path"]
+    elev_path = config["elev_path"]
+    mask_path = config["mask_path"]
+
     geojson_path = os.path.join(PROJECT_ROOT, "data/output_extracted_trails.geojson")
 
     # confirm exists
@@ -25,9 +29,9 @@ def plot_vectorized_results():
     print("Reading extracted vector network...")
     gdf = gpd.read_file(geojson_path)
 
-    # extract bounding parameters of Tile 424 to focus the viewport
-    dataset = MultimodalTrailDataset(naip_path, elev_path, mask_path, tile_size=512, stride=256)
-    x_offset, y_offset = dataset.tiles[424]
+    # extract bounding parameters to focus the viewport
+    dataset = MultimodalTrailDataset(config=config)
+    x_offset, y_offset = dataset.tiles[TILE]
     
     print("Opening background NAIP satellite image context...")
     with rasterio.open(naip_path) as src:
@@ -41,12 +45,12 @@ def plot_vectorized_results():
         
         gdf.plot(ax=ax, color="#00FFFF", linewidth=3.0, label="Trained Extracted Network Topology")
         
-        # crop the visualization box to focus exactly around Tile 424 - example tile
+        # crop the visualization box to focus exactly around the tile
         # note: affine matrix layouts can flip y coordinates depending on northern orientation
         ax.set_xlim([min(tile_top_left[0], tile_bottom_right[0]), max(tile_top_left[0], tile_bottom_right[0])])
         ax.set_ylim([min(tile_top_left[1], tile_bottom_right[1]), max(tile_top_left[1], tile_bottom_right[1])])
         
-        ax.set_title("Inference Stage: Local GeoJSON Trail Vector Alignment (Tile 424 Area)", fontsize=11, fontweight="bold")
+        ax.set_title("Inference Stage: Local GeoJSON Trail Vector Alignment (Tile Area)", fontsize=11, fontweight="bold")
         custom_line = plt.Line2D([0], [0], color="#00FFFF", lw=3.0, label='Extracted Continuous Vector Path')
         ax.legend(handles=[custom_line], loc='upper right')
         
