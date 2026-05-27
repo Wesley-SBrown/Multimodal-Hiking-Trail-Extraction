@@ -6,6 +6,7 @@ from rasterio.features import rasterize
 import osmnx as ox
 import numpy as np
 import os
+from src.utils.config_loader import load_region_config
 
 # set a global cache storage location
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
@@ -34,7 +35,10 @@ def generate_training_mask(tiff_path, output_mask_path, place_name=None):
     edges = None
 
     # define a local path to store paths
-    local_vector_backup = os.path.join(PROJECT_ROOT, "data/raw/mt_tamalpais_trails.geojson")
+    raw_dir = os.path.join(PROJECT_ROOT, "data", "raw")
+    region = load_region_config(PROJECT_ROOT)['active_region']
+
+    local_vector_backup = os.path.join(raw_dir, region) + ".geojson"
 
     if os.path.exists(local_vector_backup):
         print(f"Using backup at {local_vector_backup}. Loading offline...")
@@ -112,6 +116,7 @@ def generate_training_mask(tiff_path, output_mask_path, place_name=None):
 
 
 if __name__ == "__main__":
+    # test with mt tam
     raw_tiff = "../../data/raw/mt_tamalpais_naip.tif"
     output_mask = "../../data/masks/mt_tamalpais_mask.tif"
 

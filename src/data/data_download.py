@@ -3,9 +3,9 @@
 import osmnx as ox
 import matplotlib.pyplot as plt
 import ee 
-import geemap
 import os
 import time
+from src.utils.config_loader import load_region_config
 
 # Open Street Map testing
 def download_osm_trails(place_name: str):
@@ -47,7 +47,7 @@ def auth():
 
 # collect NAIP data
 # files are too large for direct download, so have to use a gdrive setup (50MB limit)
-def download_naip_images_to_drive(bbox, folder_name='ECS111_Trail_Data'):
+def download_naip_images_to_drive(bbox, folder_name='ECS111_Trail_Data', region=None):
     """
     Downloads NAIP satellite images from Google Earth Engine to gdrive
     params: bbox: bounding box with lat and lon min/max vals
@@ -67,17 +67,22 @@ def download_naip_images_to_drive(bbox, folder_name='ECS111_Trail_Data'):
     # use mosaic to combine the layers together into a seemless image
     image = data.mosaic().select(['R','G','B','N']).clip(roi)
 
+    # check for required region param
+    if not region:
+        print('ERROR: Region MISSING')
+        return
+    
     # define async export
     task = ee.batch.Export.image.toDrive(
         image=image,
-        description='mt_tamalpais_naip_highres',
+        description=f'{region} naip',
         folder=folder_name,
-        fileNamePrefix='mt_tamalpais_naip',
+        fileNamePrefix=f'{region}_naip',
         scale=0.6,
         region=roi,
         fileFormat='GeoTIFF'
     )
-
+    
     # start export 
     task.start()
     print(f"Task started! Exporting 0.6m high-res imagery to your Google Drive folder: '{folder_name}'")
@@ -95,7 +100,7 @@ def download_naip_images_to_drive(bbox, folder_name='ECS111_Trail_Data'):
         print(f"Error: export failed: {end.get('error_message')}")
 
 # collect usgs elevation data from earth engine
-def download_usgs_elevation(bbox, folder_name="ECS111_Trail_Data"):
+def download_usgs_elevation(bbox, folder_name="ECS111_Trail_Data", region=None):
     """
     Saves USGS 3DEP Digital Elevation Model (DEM) data within the given bounding box
     Then saves to specified google drive folder 
@@ -119,12 +124,17 @@ def download_usgs_elevation(bbox, folder_name="ECS111_Trail_Data"):
     # fit the global elevation model to specific bounding box
     elevation_fit = elevation_dataset.clip(roi)
 
+    # check for required region param
+    if not region:
+        print('ERROR: Region MISSING')
+        return
+    
     # setup async export 
     task = ee.batch.Export.image.toDrive(
         image=elevation_fit,
-        description='mt_tamalpais_elevation',
+        description= f'{region} elevation',
         folder=folder_name,
-        fileNamePrefix='mt_tamalpais_elevation',
+        fileNamePrefix=f'{region}_elevation',
         scale=0.6, # forced rescaling to match NAIP
         region=roi,
         fileFormat='GeoTIFF'
@@ -145,14 +155,19 @@ def download_usgs_elevation(bbox, folder_name="ECS111_Trail_Data"):
         print('Download and save to cwd to use!')
 
 if __name__=='__main__':
-    # uncomment to pull path data from Open Street Map 
-    # place = "Mount Tamalpais State Park, California, USA"
-    # gdf = download_osm_trails(place)
+    # load in config
+    PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+    config = load_region_config(PROJECT_ROOT)
 
-    # if gdf is not None:
-    #     gdf.plot(linewidth=1.5, color='green', figsize=(8,8))
-    #     plt.title(f"Trails in {place}")
-    #     plt.show()
+    # uncomment to pull path data from Open Street Map 
+    place = config['place_name']
+    region = config['active_region']
+    gdf = download_osm_trails(place)
+
+    if gdf is not None:
+        gdf.plot(linewidth=1.5, color='green', figsize=(8,8))
+        plt.title(f"Trails in {place}")
+        plt.show()
 
     auth() # run Earth Engine authentication 
 
@@ -161,7 +176,7 @@ if __name__=='__main__':
     mt_tam_bbox = [-122.625, 37.870, -122.580, 37.905]
     
     # uncomment to pull satellite data from NAIP
-    # download_naip_images_to_drive(mt_tam_bbox)
+    download_naip_images_to_drive(mt_tam_bbox, region=region)
 
     # uncomment to pull elevation data from USGS
-    download_usgs_elevation(mt_tam_bbox)
+    download_usgs_elevation(mt_tam_bbox, region=region)

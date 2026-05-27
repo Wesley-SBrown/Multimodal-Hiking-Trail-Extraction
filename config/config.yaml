@@ -1,0 +1,33 @@
+# config/regions.yaml
+
+active_region: yosemite
+
+regions:
+  mt_tamalpais:
+    place_name: "Mount Tamalpais State Park, California, USA"
+    naip_file: "mt_tamalpais_naip.tif"
+    elev_file: "mt_tamalpais_elevation.tif"
+    mask_file: "mt_tamalpais_mask.tif"
+    
+  yosemite:
+    place_name: "Yosemite National Park, California, USA"
+    naip_file: "yosemite_naip.tif"
+    elev_file: "yosemite_elevation.tif"
+    mask_file: "yosemite_mask.tif"
+
+hyperparameters:
+  tile_size: 512
+  stride: 256
+  batch_size: 4
+  epochs: 15
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  ce_trail_weight: 10.0
+
+inference:
+  confidence_threshold: 0.28
+  morphology_disk_radius: 2.2
+  min_pixel_length: 10
+  output_geojson: "data/output_extracted_trails.geojson"
+
+ 
