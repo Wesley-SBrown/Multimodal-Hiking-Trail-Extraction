@@ -29,3 +29,8 @@ Thumbs.db
 
 .env
 
+checkpoints/best_trail_model.pth
+data/output_extracted_trails.geojson
+data/final_vector_overlay.png
+checkpoints/best_trail_model.pth
+data/final_vector_overlay.png
