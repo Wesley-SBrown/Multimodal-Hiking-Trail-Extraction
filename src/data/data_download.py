@@ -146,13 +146,13 @@ def download_usgs_elevation(bbox, folder_name="ECS111_Trail_Data"):
 
 if __name__=='__main__':
     # uncomment to pull path data from Open Street Map 
-    # place = "Mount Tamalpais State Park, California, USA"
-    # gdf = download_osm_trails(place)
+    place = "Mount Tamalpais State Park, California, USA"
+    gdf = download_osm_trails(place)
 
-    # if gdf is not None:
-    #     gdf.plot(linewidth=1.5, color='green', figsize=(8,8))
-    #     plt.title(f"Trails in {place}")
-    #     plt.show()
+    if gdf is not None:
+        gdf.plot(linewidth=1.5, color='green', figsize=(8,8))
+        plt.title(f"Trails in {place}")
+        plt.show()
 
     auth() # run Earth Engine authentication 
 
@@ -161,7 +161,7 @@ if __name__=='__main__':
     mt_tam_bbox = [-122.625, 37.870, -122.580, 37.905]
     
     # uncomment to pull satellite data from NAIP
-    # download_naip_images_to_drive(mt_tam_bbox)
+    download_naip_images_to_drive(mt_tam_bbox)
 
     # uncomment to pull elevation data from USGS
     download_usgs_elevation(mt_tam_bbox)
