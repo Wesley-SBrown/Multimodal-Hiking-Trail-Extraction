@@ -1,0 +1,9 @@
+{
+    "mIoU": 0.3710619134306629,
+    "F1": 0.49669434633863435,
+    "PixelAccuracy": 1.0,
+    "ThinTrailIoU": 0.07920958620532874,
+    "ConnectivityScore": 0.225720160660418,
+    "AverageLatencySeconds": 0.008825038103449265,
+    "AverageVRAM_GB": 0.13617742141621225
+}

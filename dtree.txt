@@ -1,117 +1,4 @@
 .
-├── cache
-│   ├── 05a306cd2ec315a900f3a0164b8301d26ea2e8c2.json
-│   ├── 063c12b2a27e49cb9c30e9cb8ae05fc464b0ceba.json
-│   ├── 074f086cbefa5855ac6ee728ef510666a116d37a.json
-│   ├── 07d03d8d3ec55f55b5144c9a1552a1902c59ca7d.json
-│   ├── 08cb83aa0c65f4386972788f2fd62e937c1a5dee.json
-│   ├── 0eac11258b09d52f28df5dcb1ebd367e47b47b57.json
-│   ├── 0f98d62353665e5d3d58fccc268f11249d61a740.json
-│   ├── 0fbc9447ca8453e5daf128dea5ead2e25d3c57ad.json
-│   ├── 115dfb2f9d8ff712ab63e8514797d4aa2a9436df.json
-│   ├── 1651a2c4733005c1ef7af3f5850352376b89361a.json
-│   ├── 19bb22383eb9ad6108e41b9f01abeacfd0408582.json
-│   ├── 1adf086e2527fee14b54a3461cbb06e94b472c7e.json
-│   ├── 1cdcb28a1475b26a9b038670468191467201f773.json
-│   ├── 1d4811356f2dcedd505ad54fe8f6656eca568c40.json
-│   ├── 20119f686385b045d3673ea18699b680d2adaec9.json
-│   ├── 22f4d62d3edde16683822cdac69c96f05066cb2c.json
-│   ├── 23d926ead597e5b3e9e1b3f1e464e09e85765c96.json
-│   ├── 24774ca292356666b29d9c626db44e0d0e95bb16.json
-│   ├── 2934eab84fb5fa58a3a193db504d43594930f7c4.json
-│   ├── 2e5d1dd83e92e05760abdc1a5fd63025da57de8a.json
-│   ├── 30a94e8316a0b791a829f29b8d49f8208db5716b.json
-│   ├── 34d286b0e4dc63cab78f32fe023f143580500d21.json
-│   ├── 36d2d5fb028364965a3e5d3281733017192e635a.json
-│   ├── 37b863acf316e0084ab88fbc475b290f1d6bdfe2.json
-│   ├── 38b68a2a0a581d92bd3ab31773d33293e3b5cb9e.json
-│   ├── 3f38c6195b06f87b45de7ec7fb7dc4860784a3b7.json
-│   ├── 410f83db661fcff349d0a572e61730950737ce7b.json
-│   ├── 440ea9b41b1fd6ffa3579c98dcbc7f1b9c7d4344.json
-│   ├── 4525fcdce50f05782e4e0378805bbb3cf3bd88fc.json
-│   ├── 49690ecd98c78844a612ce798643ac0adb6b4df4.json
-│   ├── 4c66b51d228c329fa73916b9304ea7ddc9d59a68.json
-│   ├── 4db16463f898758151621fa4ee6e1a8dce359e1d.json
-│   ├── 4dbc1033b8406a083d87f6227f4223b3d60a3976.json
-│   ├── 4de8233c4d221dfae3b267e61826caca9916f082.json
-│   ├── 4e7bce95a0bd057d4bea514438c778f698c78d91.json
-│   ├── 51b17e4150d1a7140fac2631b3100ed080e85906.json
-│   ├── 53f771e33c36a00d5486e2c7a4c9841620f381cd.json
-│   ├── 543a633494e8b7a17f04fabe97b03712ec30ea25.json
-│   ├── 579d3ab40462f41477c787e65cb6bc5ab51d3a07.json
-│   ├── 5a575be8877e86474dce14b3712f4b53253f08bd.json
-│   ├── 606f8fa9b080c924ba807d4c1de0399d5a2e4a6f.json
-│   ├── 6217af3f8fc729d40110d7fc921be6f5fcb8bdea.json
-│   ├── 69534b3f7d05f5ac568947aeaf85ef9320ee0a6b.json
-│   ├── 6af8745d795eb7ddb60e5cf498116f41b28cf76a.json
-│   ├── 6ef22447a013f1fbe2954a568a6a572a61ef76ae.json
-│   ├── 6f3f9d7e189ea126b0073ed9cff54bf471d2d1ad.json
-│   ├── 70ee86c3a16aa5e2b185a9030c715e8ed0a9d1f3.json
-│   ├── 71f52f8843f04a49b6560522e998ea07a6ca1570.json
-│   ├── 729f2bffcb5a39b6ef81348146e18aadbc556b21.json
-│   ├── 730e501bdce9fb1ca5135d958d8120540e123ad3.json
-│   ├── 74601ae3307a12fc0118060ca7ed3108dc74c8eb.json
-│   ├── 778bbc9b386856d227614503d56d04970fc7ae15.json
-│   ├── 7c250266473e24229b9b81a88b4e53719fc3e26c.json
-│   ├── 7c334e97efd3c9a5c5fa23b5dec65b7768909c14.json
-│   ├── 7cefba9556db24d04205611f557eefdecc2b7497.json
-│   ├── 7fede25a116f8e52e580b9199cb7e1cceefd7039.json
-│   ├── 82e15e8215ccffb436e37e2e8aa1ff2e13437f64.json
-│   ├── 830de26ab93681da65cc74e3d9bd82baa36d1dce.json
-│   ├── 847ecf5642c7331da8f60cfb51770b2872244fb5.json
-│   ├── 85e729fee6985a8285d9604af37c114ab4825fdd.json
-│   ├── 8c150229b1a1fd1a571d1b1e999895d064089b36.json
-│   ├── 8e19a7294055105f662410e3e6f227892ffdf605.json
-│   ├── 91d19c0bc41a76e3425c08941567b8675d2f9161.json
-│   ├── 9bd4eb30d82c8ea4a160fd993d0c76b5d9f935f4.json
-│   ├── 9d3c8467899a88c0f9176ee47250baeccc627596.json
-│   ├── 9da3b6a46687f5e782263d186793b3c3f4a05b48.json
-│   ├── a01216b0aba6ed5d5999bd0b0683e6090967e326.json
-│   ├── a0f727463c06107b3455899678a617ec88b5baef.json
-│   ├── a16054d538bbb569d047a0a65fc4c9b2952f8146.json
-│   ├── a20f1410356f90147818124cd4652dfca0441387.json
-│   ├── a3aaae3009883d86d6c17420f6eebedd293cf8d4.json
-│   ├── aa079b5b3d2c69dc3e7788c91f9ac67f275ac18d.json
-│   ├── aba41783d5865d6f2d3aa9fa3f737d58a7ba48b9.json
-│   ├── aea70e48b737519c5b049838aff78762467e5ecf.json
-│   ├── b44e49209703b22c55535561585ccf64bfd9b9af.json
-│   ├── b52116c15d597995b6c459a36610bcae6bd188b5.json
-│   ├── b586cbc2e22994b86485d4d849e64fafc8b8f1e8.json
-│   ├── b7da23cea4e1a946ae2229af1710d35f2f1c540a.json
-│   ├── b9c0b3ffdbc8f5b5243ba092b0b9aa3e3e47a47a.json
-│   ├── ba2d2d47097c7497df8bfaae03ba0f2dd8e266d0.json
-│   ├── bb6d06de81786cf990f163d87a7dcda723d5ff5c.json
-│   ├── bc71cb1c19c1838cf8f9b7fe63838566be39c479.json
-│   ├── bcfbc7517791f7fa6416187b216584ea31c00c85.json
-│   ├── c13df002a27a0abf7a07b074a42b554628576569.json
-│   ├── c1a9920f514b9198539a13bcf3c72d2522bf2ce8.json
-│   ├── c2213fa2d9f10e72cd743e3c5f1ab2d6fe513bc1.json
-│   ├── c4317b63f5fdcda604610b2c6478a76e13dc5ea7.json
-│   ├── c7c283af3d2a3b2c56d191cf2f1688e394594069.json
-│   ├── c86314a2e50355a84c75b2e5cd3062e559132256.json
-│   ├── cc907d9e50a8504391f65a520af70fa10c12d53b.json
-│   ├── cf6078f72d43e46e9b8b4fd0843839df1e918640.json
-│   ├── d0a706b06fb81493c19b240b4390a7bf0a136ee5.json
-│   ├── d17b571d5b0cb9f9188f679e82e25a57d33ade1f.json
-│   ├── d2033b3309f526f02d43c3254a00879fadfe53dc.json
-│   ├── d25041e0ed3d345b07f21adbdd49d6a8a4e2fd06.json
-│   ├── d29f0d8ac55315faa8d79792d0cd5c844b921126.json
-│   ├── d2a1a4af6763ee1ea3dd442cb01cc58438b17c3a.json
-│   ├── d435742e9fdd031f899e234d32cf9b3bf28aaee1.json
-│   ├── db1be0d06b6a7d47a7666bdc774724469356d34b.json
-│   ├── dc0300040196170451fdfe30cf405a110708c1b2.json
-│   ├── ddab4e8f1ce11fb58df7770c37b9bc9eedc405da.json
-│   ├── debbbc69a85c50ea85a4726e01907500d27d7f66.json
-│   ├── e0581a32cb983fe333ede50a2531df0b85512c6c.json
-│   ├── e0af9069c41631e355bd283e73b88065b4eb3816.json
-│   ├── e1d699e1a646afe66db7aa5733dddce8b20c53cb.json
-│   ├── e2c32bf9ba8a1f22ea4400bd3a717707571fbab4.json
-│   ├── e516b90eaafc9e2addece13cf4b6a5a8620a15e2.json
-│   ├── e6d5072add339df4d6da84a080f3adb1740e2680.json
-│   ├── f1b002f79367365630efc4bd9814775854aa2c57.json
-│   ├── f662590f091005ee6ea0b6d019d57411aee6e4ea.json
-│   ├── fb7f2ed0f980355e0a3249647255e13c1134c54e.json
-│   └── fee33adcfd063983b41d77e7ab813209a173795a.json
 ├── checkpoints
 │   └── best_trail_model.pth
 ├── config
@@ -120,10 +7,9 @@
 │   ├── Figure_1.png
 │   ├── final_vector_overlay.png
 │   ├── masks
-│   │   └── mt_tamalpais_mask2.tif
+│   │   └── mt_tamalpais_mask.tif
 │   ├── mt_tamalpais_sample_tile_visualization.png
 │   ├── output_extracted_trails.geojson
-│   ├── processed
 │   ├── raw
 │   │   ├── mt_tamalpais_elevation.tif
 │   │   ├── mt_tamalpais.geojson
@@ -131,38 +17,24 @@
 │   │   └── mt_tamalpais_trails.geojson
 │   └── sample_tile_visualization.png
 ├── dtree.txt
-├── notebooks
-├── __pycache__
-│   └── test_pipeline.cpython-312.pyc
+├── README
 ├── requirements_mac.txt
 ├── requirements.txt
 ├── src
 │   ├── data
-│   │   ├── cache
 │   │   ├── data_download.py
 │   │   ├── dataset.py
-│   │   ├── preprocessing.py
-│   │   └── __pycache__
+│   │   └── preprocessing.py
 │   ├── evaluate.py
 │   ├── inference
-│   │   ├── __pycache__
 │   │   └── reconstruct.py
-│   ├── __init__.py
 │   ├── models
-│   │   ├── __pycache__
 │   │   └── trail_net.py
-│   ├── __pycache__
-│   │   └── __init__.cpython-312.pyc
 │   ├── training
-│   │   ├── __pycache__
 │   │   └── train.py
 │   ├── utils
-│   │   ├── config_loader.py
-│   │   └── __pycache__
+│   │   └── config_loader.py
 │   └── visualization
-│       ├── __pycache__
 │       ├── view_data.py
 │       └── view_output.py
 └── test_pipeline.py
-
-25 directories, 141 files

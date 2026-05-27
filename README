@@ -1,0 +1,157 @@
+# Multimodal Hiking Trail Extraction
+
+A deep learning pipeline designed to automatically detect and extract thin, highly sparse hiking trails by fusing high-resolution satellite imagery (NAIP) with Digital Elevation Models (DEM). The system leverages a dual-stream encoder architecture to ingest optical/spectral indices alongside topographic slope variants, outputting continuous trail network segmentations that are vectorized back into GIS-ready formats.
+
+## Features
+
+* **Dual-Stream Symmetric Architecture**: Processes a 5-channel visual vector (RGB + NIR + NDVI) symmetrically alongside a normalized 1-channel elevation vector (DEM) to resolve terrain cuts.
+* **Hardware-Optimized Convolutions**: Implements spatially separable (depthwise/pointwise) convolutions to drastically reduce parameter footprint for consumer-grade GPUs.
+* **Adaptive Resampling (Anti-Aliasing)**: Uses an internal channel-wise frequency gate module before pooling steps to ensure narrow, single-pixel paths do not wash away during downsampling.
+* **Offline Caching Vector Pipeline**: Automatically caches fetched OpenStreetMap (OSM) trail segments to local disk, neutralizing upstream server rate-limiting blocks during active dataset creation loops.
+* **Robust Scale Training Optimization**: Accelerates sparse feature convergence using combined Weighted Cross-Entropy and Dice Loss optimizations alongside virtual large-batch Gradient Accumulation.
+
+---
+
+## Project Structure
+
+```text
+multimodal-hiking-trail-extraction/
+├── config/
+│   └── config.yaml          # Global pipeline settings & region geometries
+├── data/
+│   ├── masks/               # Generated binary ground-truth masks (.tif)
+│   ├── raw/                 # Input NAIP, Elevation, and cached GeoJSON data
+│   └── output_extracted_trails.geojson  # Final inference vector export
+├── src/
+│   ├── data/
+│   │   ├── data_download.py  # GEE imagery scraping & OSM geometry extraction
+│   │   ├── dataset.py        # Lazy-loaded raster processing & augmentation
+│   │   └── preprocessing.py  # Label buffering and array rasterization
+│   ├── models/
+│   │   └── trail_net.py      # Custom MultiModalNet architecture with spatial gates
+│   ├── inference/
+│   │   └── reconstruct.py    # Pixel-to-graph skeletonization & vectorization
+│   ├── training/
+│   │   └── train.py          # Training loop with AMP and GradAccumulation
+│   └── utils/
+│       └── config_loader.py  # Runtime dictionary config parser
+└── test_pipeline.py          # Data pipeline verification smoke script
+
+```
+
+---
+
+## Installation & Setup
+
+1. **Clone the repository**:
+
+```bash
+git clone https://github.com/wesley-sbrown/multimodal-hiking-trail-extraction.git
+cd multimodal-hiking-trail-extraction
+
+```
+
+2. **Set up the virtual environment**:
+
+```bash
+# Create environment via Miniforge/Conda
+conda create -n Trail python=3.12 -y
+conda activate Trail
+
+# Install geometric and ML dependencies
+conda install -r requirements.txt
+
+```
+
+
+3. **Google Earth Engine Authentication**:
+
+The data download script pulls imagery down to a Google Drive folder via the Earth Engine API. Ensure your GEE project identity matches the cloud project field in `src/data/data_download.py`:
+
+```python
+ee.Initialize(project='your-gee-project-name')
+
+```
+
+---
+
+## Execution Workflow
+
+### 1. Configure the Target Area
+
+Open `config/config.yaml` to designate the active region. The system dynamically queries and constructs coordinates based on your `place_name` string:
+
+```yaml
+active_region: mt_tamalpais
+
+regions:
+  mt_tamalpais:
+    place_name: "Mount Tamalpais State Park, California, USA"
+    naip_file: "mt_tamalpais_naip.tif"
+    elev_file: "mt_tamalpais_elevation.tif"
+    mask_file: "mt_tamalpais_mask.tif"
+
+```
+
+### 2. Download Data
+
+Execute the collector script to pull OSM spatial vectors and submit tasks to the Google Earth Engine exporter pipeline. This saves a local offline backup `.geojson` profile containing your vector networks immediately:
+
+```bash
+python3 -m src.data.data_download
+
+```
+
+*Once processing finishes in your cloud console queue, move the downloaded `naip` and `elevation` GeoTIFFs from Google Drive into your local `data/raw/` directory.*
+
+### 3. Verify and Preprocess the Data
+
+Run the internal pipeline test to load your offline cached trail data, project paths to metric units, map them with a realistic physical width buffer, and output a aligned binary mask:
+
+```bash
+python3 -m test_pipeline
+
+```
+
+### 4. Train the Model
+
+Launch the model optimizer loop. This run utilizes Mixed Precision (AMP), safely streams windows through multi-process workers using cross-process lazy loading, and saves weight checkpoints to `checkpoints/best_trail_model.pth`:
+
+```bash
+python3 -m src.training.train
+
+```
+
+### 5. Run Inference & Path Reconstruction
+
+Run the forward segmentation engine across an evaluation window. This extracts continuous confidence arrays, reduces isolated background clutter, thins raw pixels down to a 1-pixel spine using skeletonization algorithms, and exports clean geographic vector trajectories:
+
+```bash
+python3 -m src.inference.reconstruct
+
+```
+
+### 6. Evaluation
+
+Run the evaluation script to determine performance metrics.
+
+```bash
+python3 -m src.evaluate
+```
+
+---
+
+## 📊 Neural Network Details
+
+The underlying model (`MultiModalNet`) handles structural multi-resolution inputs via separate encoding paths:
+
+```text
+Visual Input (B, 5, 512, 512)    ──►  Symmetric Encoder ──┐
+                                                          ├──► Symmetric Concat & Bottleneck (256ch) ──► Final Head
+Elevation Input (B, 1, 512, 512) ──►  Symmetric Encoder ──┘
+
+```
+
+* **Visual Stream**: Handles 5 stacked bands consisting of Red, Green, Blue, Near-Infrared (NIR), and an on-the-fly calculated Normalized Difference Vegetation Index (NDVI) mapping.
+* **Elevation Stream**: Ingests raw un-interpolated topographical datasets, preserving true structural grade gradients (cliffs and benches) across window bounds.
+* **Decoder Pipeline**: Combines skip connections from both modalities during transpose convolutions to allow spatial alignments to guide the segmentation mask assembly.

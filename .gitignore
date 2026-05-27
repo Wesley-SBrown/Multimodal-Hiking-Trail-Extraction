@@ -2,6 +2,7 @@ data/raw/
 data/masks/
 data/processed/
 
+outputs/visualizations/
 
 src/data/cache/
 cache/

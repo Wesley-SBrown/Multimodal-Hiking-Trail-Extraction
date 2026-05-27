@@ -33,7 +33,7 @@ class DiceLoss(nn.Module):
         probs = torch.softmax(logits, dim=1)
         trail_probs = probs[:, 1, :, :]
 
-        # FIX: Ensure targets are float, on the right device, and match shape
+        # ensure targets are float, on the right device, and match shape
         targets = targets.float().to(device=logits.device)
 
         intersection = (trail_probs * targets).sum(dim=(1, 2))
@@ -100,7 +100,7 @@ def run_smoke_test(model, train_loader, criterion_ce, criterion_dice, device):
 
     # backward pass check
     # confirms gradients can be computed.
-    # No optimizer.step() is called, so weights are NOT updated.
+    # no optimizer.step() is called, so weights are NOT updated.
     model.zero_grad()
     loss.backward()
     model.zero_grad()
@@ -122,14 +122,15 @@ def train_model():
     # define hyperparameters
     epochs = 15
     batch_size = 4
-    learning_rate = 1e-3
+    accumulation_steps = 4
+    learning_rate = 5e-4
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f'Starting training on: {device}')
 
     # pipeline acceleration
     dataset = MultimodalTrailDataset(config=config)
 
-    # definte 80/20 split for train and validation
+    # define 80/20 split for train and validation
     train_size = int(0.8 * len(dataset))
     val_size = len(dataset) - train_size
     train_set, val_set = torch.utils.data.random_split(
@@ -156,9 +157,14 @@ def train_model():
     # define model, optimizer, & balanced loss engine
     model = MultiModalNet(num_classes=2).to(device=device)
     optimizer = optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=1e-4)
-    scheduler = optim.lr_scheduler.CosineAnnealingLR(
+
+    # adaptive scheduler instead of blind cosine drops
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(
         optimizer=optimizer,
-        T_max=epochs
+        mode='min',
+        patience=2,
+        factor=0.5,
+        verbose=True
     )
 
     # apply 1:10 penalization scaling on Cross Entropy so more attention on thin trails
@@ -190,33 +196,40 @@ def train_model():
         train_loss = 0.0
         train_iou = 0.0
 
-        loop = tqdm(train_loader, desc=f"Epoch [{epoch}/{epochs}]")
-        for visual, elev, targets in loop:
-            visual, elev, targets = visual.to(device), elev.to(device), targets.to(device)
+        optimizer.zero_grad()
+        optimization_steps = 0
 
-            optimizer.zero_grad()
+        loop = tqdm(enumerate(train_loader), total=len(train_loader), desc=f"Epoch [{epoch}/{epochs}]")
+        for batch_idx, (visual, elev, targets) in loop:
+            visual, elev, targets = visual.to(device), elev.to(device), targets.to(device)
 
             # mix precision forward pass
             with autocast_mode.autocast("cuda"):
                 outputs = model(visual, elev)
                 loss_ce = criterion_ce(outputs, targets)
                 loss_dice = criterion_dice(outputs, targets)
-                loss = loss_ce + loss_dice
+
+                # normalize loss to account for accumulated steps
+                loss = (loss_ce + loss_dice) / accumulation_steps
 
             # scaled gradiants backward pass
             scaler.scale(loss).backward()
-            scaler.step(optimizer)
-            scaler.update()
+
+            # step the optimizer once accumulation target is hit
+            if (batch_idx + 1) % accumulation_steps == 0 or (batch_idx + 1) == len(train_loader):
+                scaler.step(optimizer)
+                scaler.update()
+                optimizer.zero_grad()
+                optimization_steps += 1 # track parameter updates
 
             # save training metrics
-            train_loss += loss.item()
+            train_loss += (loss.item() * accumulation_steps)
             preds = torch.argmax(outputs, dim=1)
             train_iou += calculate_iou(preds, targets)
 
             loop.set_postfix(loss=loss.item())
 
-        scheduler.step()
-        avg_train_loss = train_loss / len(train_loader)
+        avg_train_loss = train_loss / (optimization_steps * accumulation_steps)
         avg_train_iou = train_iou / len(train_loader)
 
         # validation steps
@@ -240,6 +253,9 @@ def train_model():
 
         avg_val_loss = val_loss / len(val_loader)
         avg_val_iou = val_iou / len(val_loader)
+
+        # update learning rate based on real validation loss behavior
+        scheduler.step(avg_val_loss)
 
         print(
             f"\nMetrics:\n"
