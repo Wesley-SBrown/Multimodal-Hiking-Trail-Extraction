@@ -1,5 +1,6 @@
 # src/training/train.py
 import os
+os.environ['GDAL_DATA'] = r'C:\Users\flyin\Miniconda3\envs\hike\Lib\site-packages\osgeo\data\gdal'
 import sys
 from pathlib import Path
 

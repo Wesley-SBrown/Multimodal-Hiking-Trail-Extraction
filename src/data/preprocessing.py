@@ -1,11 +1,12 @@
 # src/data/preprocessing.py
-
+import os
+os.environ['GDAL_DATA'] = r'C:\Users\flyin\Miniconda3\envs\hike\Lib\site-packages\osgeo\data\gdal'
 import geopandas as gpd
 import rasterio
 from rasterio.features import rasterize
 import osmnx as ox
 import numpy as np
-import os
+
 
 # set a global cache storage location
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
