@@ -165,7 +165,7 @@ def train_model():
         mode='min',
         patience=2,
         factor=0.5,
-        verbose=True
+        #verbose=True
     )
 
     # apply 1:10 penalization scaling on Cross Entropy so more attention on thin trails
