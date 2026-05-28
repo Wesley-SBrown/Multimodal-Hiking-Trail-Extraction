@@ -15,14 +15,14 @@ from src.data.dataset import MultimodalTrailDataset
 from src.utils.config_loader import load_region_config
 
 
-def mask_to_graph(pred_mask, transform, crs, x_offset, y_offset, min_pixel_length=15):    
+def mask_to_graph(pred_mask, transform, crs, x_offset, y_offset, disk_radius=2.2, min_pixel_length=15):    
     """
     Collapses a binary pixel segmentation mask into a skeleton & extracts coord nodes
     Exports into vectored GeoDataFrame
     """
 
     # use morphological closing with small radius - helps with gaps
-    closed_mask = closing(pred_mask > 0, footprint=disk(2.2)) # larger disk(x) value reaches farther
+    closed_mask = closing(pred_mask > 0, footprint=disk(disk_radius)) # larger disk(x) value reaches farther
 
     # clean isolated stray noise blobs before building the topology graph
     clean_mask = remove_small_objects(closed_mask > 0, min_size=min_pixel_length)
@@ -138,7 +138,7 @@ def run_inference():
         trail_probs = probs[1, :, :]  # Class 1 probability map [512, 512]
         
         # set soft activation threshold to keep the network connected
-        CONFIDENCE_THRESHOLD = 0.23
+        CONFIDENCE_THRESHOLD = config['confidence_threshold']
         binary_preds = (trail_probs >= CONFIDENCE_THRESHOLD).astype(np.uint8)
 
     # extract spatial parameters to properly anchor lines onto global maps
@@ -148,10 +148,11 @@ def run_inference():
 
     print("Collapsing pixel predictions into topological graph paths...")
 
-    disk_radius = config.get("morphology_disk_radius", 2.2)
+    disk_radius = config.get("morphology_disk_radius")
     min_length = config.get("min_pixel_length")
 
-    extracted_gdf = mask_to_graph(binary_preds, transform, crs, x_offset, y_offset, min_pixel_length=min_length)
+    extracted_gdf = mask_to_graph(binary_preds, transform, crs, x_offset, y_offset, 
+                                  disk_radius=disk_radius, min_pixel_length=min_length)
 
     if extracted_gdf is not None:
         os.makedirs(os.path.dirname(output_geojson), exist_ok=True)

@@ -5,11 +5,12 @@
 │   └── config.yaml
 ├── data
 │   ├── Figure_1.png
-│   ├── final_vector_overlay.png
 │   ├── masks
 │   │   └── mt_tamalpais_mask.tif
-│   ├── mt_tamalpais_sample_tile_visualization.png
-│   ├── output_extracted_trails.geojson
+│   ├── mt_tamalpais_tile_200_mapped.png
+│   ├── mt_tamalpais_tile_200.png
+│   ├── mt_tamalpais_tile_645.png
+│   ├── output_extracted_trails_tile_200.geojson
 │   ├── raw
 │   │   ├── mt_tamalpais_elevation.tif
 │   │   ├── mt_tamalpais.geojson
@@ -17,11 +18,16 @@
 │   │   └── mt_tamalpais_trails.geojson
 │   └── sample_tile_visualization.png
 ├── dtree.txt
+├── outputs
+│   ├── evaluation_results.json
+│   ├── mt_tamalpais_valid_tiles.txt
+│   └── visualizations
 ├── README
 ├── requirements_mac.txt
 ├── requirements.txt
 ├── src
 │   ├── data
+│   │   ├── cache
 │   │   ├── data_download.py
 │   │   ├── dataset.py
 │   │   └── preprocessing.py

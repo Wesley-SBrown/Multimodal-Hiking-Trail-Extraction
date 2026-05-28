@@ -15,8 +15,7 @@ regions:
     elev_file: "yosemite_elevation.tif"
     mask_file: "yosemite_mask.tif"
 
-hyperparameters:
-  tile_size: 512
+hyperparameters: # NOTE: not implemented dynamically **MUST DO IN train.py FILE**
   stride: 256
   batch_size: 4
   epochs: 15

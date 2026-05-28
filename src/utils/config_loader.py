@@ -38,6 +38,7 @@ def load_region_config(project_root, config_path="config/config.yaml"):
     output_geojson = inference_config['output_geojson']
     morphology_disk_radius = inference_config['morphology_disk_radius']
     min_pixel_length = inference_config['min_pixel_length']
+    confidence_threshold = inference_config['confidence_threshold']
 
     return {
         "active_region": active_region,
@@ -50,5 +51,6 @@ def load_region_config(project_root, config_path="config/config.yaml"):
         "active_tile_id": active_tile_id,
         "output_geojson": output_geojson,
         "morphology_disk_radius": morphology_disk_radius,
-        "min_pixel_length": min_pixel_length
+        "min_pixel_length": min_pixel_length,
+        "confidence_threshold": confidence_threshold
     }
