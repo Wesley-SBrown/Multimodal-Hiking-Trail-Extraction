@@ -1,0 +1,32 @@
+# config/config.yaml
+
+active_region: mt_tamalpais
+
+regions:
+  mt_tamalpais:
+    place_name: "Mount Tamalpais State Park, California, USA"
+    naip_file: "mt_tamalpais_naip.tif"
+    elev_file: "mt_tamalpais_elevation.tif"
+    mask_file: "mt_tamalpais_mask.tif"
+    
+  yosemite:
+    place_name: "Yosemite Valley, California, USA"
+    naip_file: "yosemite_naip.tif"
+    elev_file: "yosemite_elevation.tif"
+    mask_file: "yosemite_mask.tif"
+
+hyperparameters: # NOTE: not implemented dynamically **MUST DO IN train.py FILE**
+  stride: 256
+  batch_size: 4
+  epochs: 15
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  ce_trail_weight: 10.0
+
+inference:
+  active_tile_id: 200
+  valid_tiles_log: "outputs/valid_tiles_index.txt" 
+  confidence_threshold: 0.28
+  morphology_disk_radius: 2.2
+  min_pixel_length: 10
+  output_geojson: "data/output_extracted_trails_tile_{tile_id}.geojson" 

@@ -1,18 +1,20 @@
 # src/data/dataset.py
 
 import torch
-from torch.utils.data import Dataset
 import rasterio
 import numpy as np
+from torch.utils.data import Dataset
 
 class MultimodalTrailDataset(Dataset):
-    def __init__(self, naip_path, elev_path, mask_path, tile_size=512, stride=512):
-        self.tile_size = tile_size
-        self.stride = stride
+    def __init__(self, config):
+        # use global config.yaml for proper attr managing
+        self.region_name = config['active_region']
+        self.tile_size = config['tile_size']
+        self.stride = config['stride']
         
-        self.naip_path = naip_path
-        self.elev_path = elev_path
-        self.mask_path = mask_path
+        self.naip_path = config['naip_path']
+        self.elev_path = config['elev_path']
+        self.mask_path = config['mask_path']
 
         # open files briefly to read dimensions and compute global stats
         with rasterio.open(self.naip_path) as naip_src, rasterio.open(self.elev_path) as elev_src:
@@ -24,14 +26,14 @@ class MultimodalTrailDataset(Dataset):
 
             # Read a lower resolution overview to speed up initialization on huge rasters
             elev_overview = elev_src.read(1, out_shape=(1024, 1024))
-            self.global_elev_min = float(elev_overview.min())
-            self.global_elev_max = float(elev_overview.max())
+            self.global_elev_min = float(np.nanmin(elev_overview))
+            self.global_elev_max = float(np.nanmax(elev_overview))
             print(f"Global Elevation Range: {self.global_elev_min}m to {self.global_elev_max}m")
         
         # pre-calc grid positions for tile slicing (sliding window)
         self.tiles = []
-        for y in range(0, self.height - tile_size + 1, stride):
-            for x in range(0, self.width - tile_size + 1, stride):
+        for y in range(0, self.height - self.tile_size + 1, self.stride):
+            for x in range(0, self.width - self.tile_size + 1, self.stride):
                 self.tiles.append((x, y))
         
         # internal states for lazy loading
@@ -75,7 +77,20 @@ class MultimodalTrailDataset(Dataset):
         ndvi = np.expand_dims(ndvi, axis=0)  # Shape: [1, H, W]
         
         # read elevation data and normalize 
-        elev_tile = self.elev_src.read(1, window=window).astype(np.float32)
+        elev_tile = self.elev_src.read(1, window=window, boundless=True, fill_value=self.global_elev_min).astype(np.float32)
+
+        # account for corrupted low nodata flags (i.e., -9999) from raw USGS metadata
+        elev_tile[np.isnan(elev_tile)] = self.global_elev_min
+        elev_tile[elev_tile < self.global_elev_min] = self.global_elev_min
+
+        # if still issues with empty grid, reshape
+        if elev_tile.shape[0] != self.tile_size or elev_tile.shape[1] != self.tile_size:
+            # initialize using global_elev_min so padding normalizes to 0.0 after subtraction
+            padded = np.full((self.tile_size, self.tile_size), self.global_elev_min, dtype=np.float32)
+            h_limit = min(elev_tile.shape[0], self.tile_size)
+            w_limit = min(elev_tile.shape[1], self.tile_size)
+            padded[:h_limit, :w_limit] = elev_tile[:h_limit, :w_limit]
+            elev_tile = padded
 
         # normalize using global extrema to retain uniform spatial gradients (slopes/cliffs)
         if self.global_elev_max > self.global_elev_min:
@@ -88,7 +103,7 @@ class MultimodalTrailDataset(Dataset):
         elev_tile = np.expand_dims(elev_tile, axis=0)  # Shape: [1, H, W]
         
         # read in ground truth mask
-        mask_tile = self.mask_src.read(1, window=window).astype(np.int64)
+        mask_tile = self.mask_src.read(1, window=window, boundless=True, fill_value=0).astype(np.int64)
         
         # concat inputs for symmetrical MAPA framework
         # visual/environmental vector: RGB + NIR + NDVI (5 channels total)

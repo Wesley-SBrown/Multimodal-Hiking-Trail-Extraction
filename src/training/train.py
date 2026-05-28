@@ -17,7 +17,9 @@ sys.path.append(str(PROJECT_ROOT))
 
 from src.data.dataset import MultimodalTrailDataset
 from src.models.trail_net import MultiModalNet
+from src.utils.config_loader import load_region_config
 
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 
 class DiceLoss(nn.Module):
     """
@@ -31,6 +33,9 @@ class DiceLoss(nn.Module):
     def forward(self, logits, targets):
         probs = torch.softmax(logits, dim=1)
         trail_probs = probs[:, 1, :, :]
+
+        # ensure targets are float, on the right device, and match shape
+        targets = targets.float().to(device=logits.device)
 
         intersection = (trail_probs * targets).sum(dim=(1, 2))
         denominator = trail_probs.sum(dim=(1, 2)) + targets.sum(dim=(1, 2))
@@ -74,19 +79,21 @@ def run_smoke_test(model, train_loader, criterion_ce, criterion_dice, device):
     elev = elev.to(device)
     targets = targets.long().to(device)
 
-    # forward pass 
-    outputs = model(visual, elev)
-
     # print tensor shapes to verify the dataset and model match
     print("Visual shape:", visual.shape, "Expected: [B, 5, 512, 512]")
     print("Elevation shape:", elev.shape, "Expected: [B, 1, 512, 512]")
     print("Mask shape:", targets.shape, "Expected: [B, 512, 512]")
-    print("Output shape:", outputs.shape, "Expected: [B, 2, 512, 512]")
+    
 
-    # calculate the same losses used in training
-    loss_ce = criterion_ce(outputs, targets)
-    loss_dice = criterion_dice(outputs, targets)
-    loss = loss_ce + loss_dice
+    with autocast_mode.autocast("cuda"):
+        # forward pass 
+        outputs = model(visual, elev)
+        print("Output shape:", outputs.shape, "Expected: [B, 2, 512, 512]")
+
+        # calculate the same losses used in training
+        loss_ce = criterion_ce(outputs, targets)
+        loss_dice = criterion_dice(outputs, targets)
+        loss = loss_ce + loss_dice
 
     print("Smoke test CE loss:", loss_ce.item())
     print("Smoke test Dice loss:", loss_dice.item())
@@ -94,10 +101,12 @@ def run_smoke_test(model, train_loader, criterion_ce, criterion_dice, device):
 
     # backward pass check
     # confirms gradients can be computed.
-    # No optimizer.step() is called, so weights are NOT updated.
+    # no optimizer.step() is called, so weights are NOT updated.
     model.zero_grad()
     loss.backward()
     model.zero_grad()
+    del outputs, loss, loss_ce, loss_dice, visual, elev, targets
+    torch.cuda.empty_cache()
 
     print("Smoke test passed. Forward pass, loss, and backward pass all work.\n")
 
@@ -106,29 +115,23 @@ def train_model():
     # define paths
     PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 
-    naip_path = os.path.join(PROJECT_ROOT, "data/raw/mt_tamalpais_naip.tif")
-    elev_path = os.path.join(PROJECT_ROOT, "data/raw/mt_tamalpais_elevation.tif")
-    mask_path = os.path.join(PROJECT_ROOT, "data/masks/mt_tamalpais_mask.tif")
+    config = load_region_config(PROJECT_ROOT)
+
     checkpoint_dir = os.path.join(PROJECT_ROOT, "checkpoints")
     os.makedirs(checkpoint_dir, exist_ok=True)
 
     # define hyperparameters
     epochs = 15
     batch_size = 4
-    learning_rate = 1e-3
+    accumulation_steps = 4
+    learning_rate = 5e-4
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f'Starting training on: {device}')
 
     # pipeline acceleration
-    dataset = MultimodalTrailDataset(
-        naip_path=naip_path,
-        elev_path=elev_path,
-        mask_path=mask_path,
-        tile_size=512,
-        stride=256
-    )
+    dataset = MultimodalTrailDataset(config=config)
 
-    # definte 80/20 split for train and validation
+    # define 80/20 split for train and validation
     train_size = int(0.8 * len(dataset))
     val_size = len(dataset) - train_size
     train_set, val_set = torch.utils.data.random_split(
@@ -155,9 +158,14 @@ def train_model():
     # define model, optimizer, & balanced loss engine
     model = MultiModalNet(num_classes=2).to(device=device)
     optimizer = optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=1e-4)
-    scheduler = optim.lr_scheduler.CosineAnnealingLR(
+
+    # adaptive scheduler instead of blind cosine drops
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(
         optimizer=optimizer,
-        T_max=epochs
+        mode='min',
+        patience=2,
+        factor=0.5,
+        verbose=True
     )
 
     # apply 1:10 penalization scaling on Cross Entropy so more attention on thin trails
@@ -189,33 +197,40 @@ def train_model():
         train_loss = 0.0
         train_iou = 0.0
 
-        loop = tqdm(train_loader, desc=f"Epoch [{epoch}/{epochs}]")
-        for visual, elev, targets in loop:
-            visual, elev, targets = visual.to(device), elev.to(device), targets.to(device)
+        optimizer.zero_grad()
+        optimization_steps = 0
 
-            optimizer.zero_grad()
+        loop = tqdm(enumerate(train_loader), total=len(train_loader), desc=f"Epoch [{epoch}/{epochs}]")
+        for batch_idx, (visual, elev, targets) in loop:
+            visual, elev, targets = visual.to(device), elev.to(device), targets.to(device)
 
             # mix precision forward pass
             with autocast_mode.autocast("cuda"):
                 outputs = model(visual, elev)
                 loss_ce = criterion_ce(outputs, targets)
                 loss_dice = criterion_dice(outputs, targets)
-                loss = loss_ce + loss_dice
+
+                # normalize loss to account for accumulated steps
+                loss = (loss_ce + loss_dice) / accumulation_steps
 
             # scaled gradiants backward pass
             scaler.scale(loss).backward()
-            scaler.step(optimizer)
-            scaler.update()
+
+            # step the optimizer once accumulation target is hit
+            if (batch_idx + 1) % accumulation_steps == 0 or (batch_idx + 1) == len(train_loader):
+                scaler.step(optimizer)
+                scaler.update()
+                optimizer.zero_grad()
+                optimization_steps += 1 # track parameter updates
 
             # save training metrics
-            train_loss += loss.item()
+            train_loss += (loss.item() * accumulation_steps)
             preds = torch.argmax(outputs, dim=1)
             train_iou += calculate_iou(preds, targets)
 
             loop.set_postfix(loss=loss.item())
 
-        scheduler.step()
-        avg_train_loss = train_loss / len(train_loader)
+        avg_train_loss = train_loss / (optimization_steps * accumulation_steps)
         avg_train_iou = train_iou / len(train_loader)
 
         # validation steps
@@ -239,6 +254,9 @@ def train_model():
 
         avg_val_loss = val_loss / len(val_loader)
         avg_val_iou = val_iou / len(val_loader)
+
+        # update learning rate based on real validation loss behavior
+        scheduler.step(avg_val_loss)
 
         print(
             f"\nMetrics:\n"

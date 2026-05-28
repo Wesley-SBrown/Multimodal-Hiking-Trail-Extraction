@@ -3,7 +3,7 @@ import os
 import yaml
 
 
-def load_region_config(project_root, config_path="config/regions.yaml"):
+def load_region_config(project_root, config_path="config/config.yaml"):
     """
     Loads the active region settings from config/regions.yaml.
 
@@ -25,8 +25,20 @@ def load_region_config(project_root, config_path="config/regions.yaml"):
     mask_dir = os.path.join(project_root, "data", "masks")
 
     naip_path = os.path.join(raw_dir, region_config["naip_file"])
-    elev_path = os.path.join(raw_dir, region_config["elevation_file"])
+    elev_path = os.path.join(raw_dir, region_config["elev_file"])
     mask_path = os.path.join(mask_dir, region_config["mask_file"])
+
+    hyperparameter_config = config["hyperparameters"]
+    tile_size = hyperparameter_config['tile_size']
+    stride = hyperparameter_config['stride']
+
+    inference_config = config['inference']
+
+    active_tile_id = inference_config['active_tile_id']
+    output_geojson = inference_config['output_geojson']
+    morphology_disk_radius = inference_config['morphology_disk_radius']
+    min_pixel_length = inference_config['min_pixel_length']
+    confidence_threshold = inference_config['confidence_threshold']
 
     return {
         "active_region": active_region,
@@ -34,6 +46,11 @@ def load_region_config(project_root, config_path="config/regions.yaml"):
         "naip_path": naip_path,
         "elev_path": elev_path,
         "mask_path": mask_path,
-        "tile_size": region_config["tile_size"],
-        "stride": region_config["stride"],
+        "tile_size": tile_size,
+        "stride": stride,
+        "active_tile_id": active_tile_id,
+        "output_geojson": output_geojson,
+        "morphology_disk_radius": morphology_disk_radius,
+        "min_pixel_length": min_pixel_length,
+        "confidence_threshold": confidence_threshold
     }

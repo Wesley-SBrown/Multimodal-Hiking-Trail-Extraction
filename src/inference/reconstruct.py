@@ -12,16 +12,17 @@ from shapely.geometry import LineString
 # import previous modules
 from src.models.trail_net import MultiModalNet
 from src.data.dataset import MultimodalTrailDataset
+from src.utils.config_loader import load_region_config
 
 
-def mask_to_graph(pred_mask, transform, crs, x_offset, y_offset, min_pixel_length=15):    
+def mask_to_graph(pred_mask, transform, crs, x_offset, y_offset, disk_radius=2.2, min_pixel_length=15):    
     """
     Collapses a binary pixel segmentation mask into a skeleton & extracts coord nodes
     Exports into vectored GeoDataFrame
     """
 
     # use morphological closing with small radius - helps with gaps
-    closed_mask = closing(pred_mask > 0, footprint=disk(2.2)) # larger disk(x) value reaches farther
+    closed_mask = closing(pred_mask > 0, footprint=disk(disk_radius)) # larger disk(x) value reaches farther
 
     # clean isolated stray noise blobs before building the topology graph
     clean_mask = remove_small_objects(closed_mask > 0, min_size=min_pixel_length)
@@ -94,24 +95,30 @@ def mask_to_graph(pred_mask, transform, crs, x_offset, y_offset, min_pixel_lengt
 
 def run_inference():
     # define paths
-
     PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
     
-    naip_path = os.path.join(PROJECT_ROOT, "data/raw/mt_tamalpais_naip.tif")
-    elev_path = os.path.join(PROJECT_ROOT, "data/raw/mt_tamalpais_elevation.tif")
-    mask_path = os.path.join(PROJECT_ROOT, "data/masks/mt_tamalpais_mask.tif")
+    config = load_region_config(PROJECT_ROOT)
+    TILE = config.get("active_tile_id")
+    
+    naip_path = config["naip_path"]
+    elev_path = config["elev_path"]
+    mask_path = config["mask_path"]
+
     checkpoint_path = os.path.join(PROJECT_ROOT, "checkpoints/best_trail_model.pth")
-    output_geojson = os.path.join(PROJECT_ROOT, "data/output_extracted_trails.geojson")
+
+    geojson_template = config.get("output_geojson", "data/output_extracted_trails_tile_{tile_id}.geojson")
+    formatted_geojson = geojson_template.format(tile_id=TILE)
+    output_geojson = os.path.join(PROJECT_ROOT, formatted_geojson)
 
     # check for gpu
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # load dataset and pull sample validation tile
-    dataset = MultimodalTrailDataset(naip_path, elev_path, mask_path, tile_size=512, stride=256)
-    visual, elev, _ = dataset[424] # test tile
+    # load dataset and pull sample validation tileDataset(
+    dataset = MultimodalTrailDataset(config=config)
+    visual, elev, _ = dataset[TILE] # test tile
 
     # extract the exact tile offset from the dataset's tracking grid
-    x_offset, y_offset = dataset.tiles[424]
+    x_offset, y_offset = dataset.tiles[TILE]
 
     # load trained network weights
     model = MultiModalNet(num_classes=2).to(device)
@@ -131,7 +138,7 @@ def run_inference():
         trail_probs = probs[1, :, :]  # Class 1 probability map [512, 512]
         
         # set soft activation threshold to keep the network connected
-        CONFIDENCE_THRESHOLD = 0.23
+        CONFIDENCE_THRESHOLD = config['confidence_threshold']
         binary_preds = (trail_probs >= CONFIDENCE_THRESHOLD).astype(np.uint8)
 
     # extract spatial parameters to properly anchor lines onto global maps
@@ -140,7 +147,12 @@ def run_inference():
         crs = src.crs
 
     print("Collapsing pixel predictions into topological graph paths...")
-    extracted_gdf = mask_to_graph(binary_preds, transform, crs, x_offset, y_offset, min_pixel_length=15)
+
+    disk_radius = config.get("morphology_disk_radius")
+    min_length = config.get("min_pixel_length")
+
+    extracted_gdf = mask_to_graph(binary_preds, transform, crs, x_offset, y_offset, 
+                                  disk_radius=disk_radius, min_pixel_length=min_length)
 
     if extracted_gdf is not None:
         os.makedirs(os.path.dirname(output_geojson), exist_ok=True)

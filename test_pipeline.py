@@ -19,21 +19,21 @@ def run_sanity_check():
     os.makedirs(mask_dir, exist_ok=True)
 
     # pull active region paths from config/regions.yaml
-    region_config = load_region_config(PROJECT_ROOT)
+    config = load_region_config(PROJECT_ROOT)
 
-    naip_path = region_config["naip_path"]
-    elev_path = region_config["elev_path"]
-    mask_path = region_config["mask_path"]
+    naip_path = config["naip_path"]
+    elev_path = config["elev_path"]
+    mask_path = config["mask_path"]
 
-    test_area = region_config["place_name"]
-    tile_size = region_config["tile_size"]
-    stride = region_config["stride"]
+    test_area = config["place_name"]
+    tile_size = config["tile_size"]
+    stride = config["stride"]
 
-    print(f"Active region: {region_config['active_region']}")
+    print(f"Active region: {config['active_region']}")
     print(f"Place name: {test_area}")
     print(f"Tile size: {tile_size}, Stride: {stride}")
 
-    print("Checking data requirements ===")
+    print("Checking data requirements")
 
     # check if local data exists already
     # required because earth engine data is saved to drive first
@@ -57,24 +57,19 @@ def run_sanity_check():
 
     print("\nInstantiating multimodal dataset")
     try:
-        dataset = MultimodalTrailDataset(
-            naip_path=naip_path,
-            elev_path=elev_path,
-            mask_path=mask_path,
-            tile_size=tile_size,
-            stride=stride # overlapping stride to verify window calculations
-        )
+        dataset = MultimodalTrailDataset(config=config)
         print(f"Dataset built successfully! Total parsed tiles: {len(dataset)}")
     except Exception as e:
-        print(f"❌ Dataset initialization failed: {e}")
+        print(f"ERROR: Dataset initialization failed: {e}")
         return
 
-    print("\n=== STEP 5: Testing Parallel Processing Data Loader ===")
-    # Using num_workers=2 to explicitly test the lazy-loading fix for cross-process issues
+    print("\nTesting Parallel Processing Data Loader")
+
+    # num_workers=2 to explicitly test the lazy-loading fix for cross-process issues
     dataloader = DataLoader(dataset, batch_size=2, shuffle=True, num_workers=2)
 
     try:
-        # Pull exactly one batch out of the generator stream
+        # pull exactly one batch out of the generator stream
         visual_batch, elev_batch, target_batch = next(iter(dataloader))
         
         print("\nCOMPONENT CHECKS")
