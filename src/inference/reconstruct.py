@@ -1,6 +1,7 @@
 # src/inference/reconstruct.py 
 
 import os
+os.environ['GDAL_DATA'] = r'C:\Users\flyin\Miniconda3\envs\hike\Lib\site-packages\osgeo\data\gdal'
 import torch
 import numpy as np
 import rasterio
