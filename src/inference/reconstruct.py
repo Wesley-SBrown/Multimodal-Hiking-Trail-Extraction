@@ -95,17 +95,20 @@ def mask_to_graph(pred_mask, transform, crs, x_offset, y_offset, min_pixel_lengt
 
 def run_inference():
     # define paths
-    TILE = 645
     PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
     
     config = load_region_config(PROJECT_ROOT)
+    TILE = config.get("active_tile_id")
     
     naip_path = config["naip_path"]
     elev_path = config["elev_path"]
     mask_path = config["mask_path"]
 
     checkpoint_path = os.path.join(PROJECT_ROOT, "checkpoints/best_trail_model.pth")
-    output_geojson = os.path.join(PROJECT_ROOT, "data/output_extracted_trails.geojson")
+
+    geojson_template = config.get("output_geojson", "data/output_extracted_trails_tile_{tile_id}.geojson")
+    formatted_geojson = geojson_template.format(tile_id=TILE)
+    output_geojson = os.path.join(PROJECT_ROOT, formatted_geojson)
 
     # check for gpu
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -144,7 +147,11 @@ def run_inference():
         crs = src.crs
 
     print("Collapsing pixel predictions into topological graph paths...")
-    extracted_gdf = mask_to_graph(binary_preds, transform, crs, x_offset, y_offset, min_pixel_length=15)
+
+    disk_radius = config.get("morphology_disk_radius", 2.2)
+    min_length = config.get("min_pixel_length")
+
+    extracted_gdf = mask_to_graph(binary_preds, transform, crs, x_offset, y_offset, min_pixel_length=min_length)
 
     if extracted_gdf is not None:
         os.makedirs(os.path.dirname(output_geojson), exist_ok=True)

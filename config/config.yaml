@@ -1,4 +1,4 @@
-# config/regions.yaml
+# config/config.yaml
 
 active_region: mt_tamalpais
 
@@ -25,9 +25,9 @@ hyperparameters:
   ce_trail_weight: 10.0
 
 inference:
+  active_tile_id: 200
+  valid_tiles_log: "outputs/valid_tiles_index.txt" 
   confidence_threshold: 0.28
   morphology_disk_radius: 2.2
   min_pixel_length: 10
-  output_geojson: "data/output_extracted_trails.geojson"
-
- 
+  output_geojson: "data/output_extracted_trails_tile_{tile_id}.geojson" 

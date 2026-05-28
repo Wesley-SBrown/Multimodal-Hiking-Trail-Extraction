@@ -131,11 +131,53 @@ def generate_training_mask(tiff_path, output_mask_path, place_name=None):
         
     print("Mask alignment pipeline complete!")
 
+def log_valid_trail_tiles(dataset, output_log_path):
+    """
+    Iterates through the dataset grid, detects tiles that contain positive 
+    ground-truth trail labels, and saves their index IDs to a text file.
+    """
+    print("Scanning dataset grid for tiles containing active trail segments...")
+    valid_ids = []
+    
+    for idx in range(len(dataset)):
+        # dataset[idx] returns (visual, elevation, mask)
+        _, _, mask = dataset[idx]
+        
+        # if the ground truth mask has any trail pixels (value > 0)
+        if (mask > 0).any():
+            valid_ids.append(idx)
+            
+    # ensure directory exists and write the IDs out
+    os.makedirs(os.path.dirname(output_log_path), exist_ok=True)
+    with open(output_log_path, "w") as f:
+        for tile_id in valid_ids:
+            f.write(f"{tile_id}\n")
+            
+    print(f"Success! Found {len(valid_ids)} valid trail tiles out of {len(dataset)} total segments.")
+    print(f"Valid tile IDs cached to: {output_log_path}")
 
 if __name__ == "__main__":
-    # test with mt tam
-    raw_tiff = "../../data/raw/mt_tamalpais_naip.tif"
-    output_mask = "../../data/masks/mt_tamalpais_mask.tif"
+    print("Loading project configuration...")
+    config = load_region_config(PROJECT_ROOT)
+    region = config["active_region"]
+    
+    # extract configuration values
+    raw_tiff = os.path.join(PROJECT_ROOT, "data/raw", region + "_naip.tif")
+    output_mask = os.path.join(PROJECT_ROOT, "data/masks", config["active_region"] + "_mask.tif")
+    test_area = config["place_name"]
+    
+    # uncomment to generate/regenerate the base mask first
+    # generate_training_mask(raw_tiff, output_mask, place_name=test_area)
 
-    test_area = "Mount Tamalpais State Park, California, USA"
-    generate_training_mask(raw_tiff, output_mask, place_name=test_area)
+    from src.data.dataset import MultimodalTrailDataset
+
+    print(f"Initializing Multimodal Trail Dataset for region: {region}...")
+    dataset = MultimodalTrailDataset(config=config)
+
+    # extract the log path from your updated config.yaml
+    inference_cfg = config.get("inference", {})
+    output_log_path = inference_cfg.get("valid_tiles_log", f"outputs/{region}_valid_tiles.txt")
+    full_log_path = os.path.join(PROJECT_ROOT, output_log_path)
+
+    # run the function to scan and log valid tiles
+    log_valid_trail_tiles(dataset, full_log_path)

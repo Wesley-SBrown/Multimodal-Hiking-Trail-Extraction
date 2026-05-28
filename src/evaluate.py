@@ -118,6 +118,8 @@ def saveVisualization(visual_tensor, mask_tensor, pred_tensor, index):
 def evaluate():
     print(f"Loading environment configurations from root space...")
     config = load_region_config(PROJECT_ROOT)
+
+    region = config['active_region']
     
     print(f"Initializing MultiModalNet on device target: {DEVICE}")
     model = MultiModalNet(num_classes=2).to(DEVICE)
@@ -191,13 +193,18 @@ def evaluate():
         print(f"[{index+1}/{len(loader)}] Frame IoU={iou:.4f} | Frame F1={f1:.4f} | Centerline IoU={thinIoU:.4f}")
 
     results = {
-        "mIoU":                  float(np.mean(iouScores)),
-        "F1":                    float(np.mean(f1Scores)),
-        "PixelAccuracy":         float(np.mean(pixelAccuracies)),
-        "ThinTrailIoU":          float(np.mean(thinTrailScores)),
-        "ConnectivityScore":     float(np.mean(connectivityScores)),
-        "AverageLatencySeconds": float(np.mean(latencies)),
-        "AverageVRAM_GB":        float(np.mean(vrams)),
+        "metadata": {
+            "region":           region,
+        },
+        "metrics": {
+            "mIoU":                  float(np.mean(iouScores)),
+            "F1":                    float(np.mean(f1Scores)),
+            "PixelAccuracy":         float(np.mean(pixelAccuracies)),
+            "ThinTrailIoU":          float(np.mean(thinTrailScores)),
+            "ConnectivityScore":     float(np.mean(connectivityScores)),
+            "AverageLatencySeconds": float(np.mean(latencies)),
+            "AverageVRAM_GB":        float(np.mean(vrams)),
+        }
     }
 
     print("\nFINAL EVALUATION RESULTS")

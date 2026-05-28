@@ -12,14 +12,15 @@ from src.utils.config_loader import load_region_config
 
 def plot_vectorized_results():
     PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")) if "__file__" in locals() else os.getcwd()
-    TILE = 645
     config = load_region_config(PROJECT_ROOT)
+    region = config['active_region']
+    TILE = config['active_tile_id']
 
     naip_path = config["naip_path"]
-    elev_path = config["elev_path"]
-    mask_path = config["mask_path"]
 
-    geojson_path = os.path.join(PROJECT_ROOT, "data/output_extracted_trails.geojson")
+    geojson_template = config.get("output_geojson", "data/output_extracted_trails_tile_{tile_id}.geojson")
+    formatted_geojson = geojson_template.format(tile_id=TILE)
+    geojson_path = os.path.join(PROJECT_ROOT, formatted_geojson)
 
     # confirm exists
     if not os.path.exists(geojson_path):
@@ -55,7 +56,7 @@ def plot_vectorized_results():
         ax.legend(handles=[custom_line], loc='upper right')
         
         # save plot
-        output_png = os.path.join(PROJECT_ROOT, "data/final_vector_overlay.png")
+        output_png = os.path.join(PROJECT_ROOT, f"data/{region}_tile_{TILE}_mapped.png")
         plt.savefig(output_png, dpi=150, bbox_inches="tight")
         print(f"Final vector overlay plot compiled and saved to:\n{output_png}")
 

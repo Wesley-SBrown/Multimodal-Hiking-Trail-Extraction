@@ -32,6 +32,13 @@ def load_region_config(project_root, config_path="config/config.yaml"):
     tile_size = hyperparameter_config['tile_size']
     stride = hyperparameter_config['stride']
 
+    inference_config = config['inference']
+
+    active_tile_id = inference_config['active_tile_id']
+    output_geojson = inference_config['output_geojson']
+    morphology_disk_radius = inference_config['morphology_disk_radius']
+    min_pixel_length = inference_config['min_pixel_length']
+
     return {
         "active_region": active_region,
         "place_name": region_config["place_name"],
@@ -40,4 +47,8 @@ def load_region_config(project_root, config_path="config/config.yaml"):
         "mask_path": mask_path,
         "tile_size": tile_size,
         "stride": stride,
+        "active_tile_id": active_tile_id,
+        "output_geojson": output_geojson,
+        "morphology_disk_radius": morphology_disk_radius,
+        "min_pixel_length": min_pixel_length
     }

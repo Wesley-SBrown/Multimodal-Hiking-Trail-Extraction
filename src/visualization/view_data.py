@@ -21,8 +21,6 @@ def plot_multimodal_tile(idx=None):
     # attempt to pull local data from the active region listed in config/regions.yaml
     region_config = load_region_config(PROJECT_ROOT)
 
-    naip_path = region_config["naip_path"]
-    elev_path = region_config["elev_path"]
     mask_path = region_config["mask_path"]
 
     tile_size = region_config["tile_size"]
@@ -120,11 +118,11 @@ def plot_multimodal_tile(idx=None):
     output_png = os.path.join(
         PROJECT_ROOT,
         "data",
-        f"{region_config['active_region']}_sample_tile_visualization.png"
+        f"{region_config['active_region']}_tile_{idx}.png"
     )
     plt.savefig(output_png, dpi=150, bbox_inches="tight")
     print(f"Visualization plot successfully compiled and saved to:\n{output_png}")
     plt.show()
 
 if __name__ == "__main__":
-    plot_multimodal_tile()
+    plot_multimodal_tile(200)
