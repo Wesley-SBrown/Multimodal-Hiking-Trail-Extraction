@@ -19,7 +19,7 @@ hyperparameters: # NOTE: not implemented dynamically **MUST DO IN train.py FILE*
   stride: 256
   batch_size: 4
   epochs: 15
-  tile_size: 256
+  tile_size: 512
   learning_rate: 0.001
   weight_decay: 0.0001
   ce_trail_weight: 10.0
