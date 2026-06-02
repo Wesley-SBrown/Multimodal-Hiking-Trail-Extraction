@@ -3,6 +3,7 @@ import sys
 import time
 import json
 import numpy as np
+from pyparsing import results
 import torch
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
@@ -208,14 +209,10 @@ def evaluate():
     }
 
     print("\nFINAL EVALUATION RESULTS")
-
-    for key, value in results.items():
-        print(f"{key}: {value:.4f}")
-
-    results_path = os.path.join(OUTPUT_DIR, "evaluation_results.json")
-    with open(results_path, "w") as f:
-        json.dump(results, f, indent=4)
-    print(f"\nSuccessfully stored evaluation analytics log at: {results_path}")
+    print(f"Region: {results['metadata']['region']}")
+    print()
+    for key, value in results["metrics"].items():
+        print(f"  {key}: {value:.4f}")
 
 
 if __name__ == "__main__":

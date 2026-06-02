@@ -1,5 +1,5 @@
 # src/visualization/visualize_output.py
-
+from src.visualization.visualize_metrics import plot_training_metrics
 import os
 import rasterio
 from rasterio.plot import show
@@ -59,7 +59,13 @@ def plot_vectorized_results():
         output_png = os.path.join(PROJECT_ROOT, f"data/{region}_tile_{TILE}_mapped.png")
         plt.savefig(output_png, dpi=150, bbox_inches="tight")
         print(f"Final vector overlay plot compiled and saved to:\n{output_png}")
-
+        
         plt.show()
+
+
+
+        if hasattr(dataset, "history") and dataset.history:
+            metrics_path = os.path.join(PROJECT_ROOT, f"data/{region}_tile_{TILE}_training_metrics.png")
+            plot_training_metrics(dataset.history, save_path=metrics_path, region=region)
 if __name__ == "__main__":
     plot_vectorized_results()
